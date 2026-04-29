@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronRight, ArrowLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import type { RouteNavigationMeta } from "../navigation";
@@ -31,7 +31,7 @@ export function AppShell({
   const ActiveIcon = activeItem.icon;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 lg:flex">
+    <div className="min-h-screen bg-[#F6F7F9] text-gray-900 lg:flex">
       <aside className="bg-[#111111] text-gray-400 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 flex flex-col">
         <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-6">
           {navigationGroups.map((group) => (
@@ -78,10 +78,10 @@ export function AppShell({
       </aside>
 
       <main className="min-w-0 flex-1 lg:ml-64">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pt-2 pb-0 md:flex-row md:items-end md:justify-between">
-            <div className="min-w-0">
-              <nav className="mb-2 flex min-h-5 items-center gap-1 overflow-x-auto text-xs font-medium text-gray-500" aria-label="Breadcrumb">
+        <div className="mx-auto max-w-7xl px-4 py-7 sm:px-6 lg:px-8">
+          <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pb-5 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0 space-y-3">
+              <nav className="flex min-h-5 items-center gap-1 overflow-x-auto text-xs font-medium text-gray-500" aria-label="Breadcrumb">
                 {routeMeta.breadcrumbs.map((crumb, index) => (
                   <span className="inline-flex items-center gap-1 whitespace-nowrap" key={`${crumb.label}-${index}`}>
                     {index > 0 ? <ChevronRight className="h-3.5 w-3.5 text-gray-400" /> : null}
@@ -95,20 +95,16 @@ export function AppShell({
                   </span>
                 ))}
               </nav>
-              {routeMeta.backTo ? (
-                <Link className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900" to={routeMeta.backTo}>
-                  <ArrowLeft className="h-4 w-4" />
-                  {routeMeta.backLabel ?? "Back"}
-                </Link>
-              ) : null}
-              <div className="flex gap-6 overflow-x-auto">
-                <button className="flex items-center gap-2 border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm">
                   <ActiveIcon className="h-4 w-4" />
-                  {routeMeta.title}
-                </button>
+                </span>
+                <div className="min-w-0">
+                  <h1 className="truncate text-xl font-semibold tracking-normal text-gray-950">{routeMeta.title}</h1>
+                </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 pb-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className={statusClass(state)}>
                 <span className="h-2 w-2 rounded-full bg-current" />
                 {statusLabel}

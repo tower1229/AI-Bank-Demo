@@ -1,5 +1,3 @@
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
 import type { CustomerSearchResult } from "../../bank/service";
 import type { DashboardData, RiskLevel } from "../../bank/types";
 import { formatUsd } from "../lib/format";
@@ -13,21 +11,12 @@ export function SectionHeader({ title, detail }: { title: string; detail: string
   );
 }
 
-export function BackLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900" to={to}>
-      <ArrowLeft className="h-4 w-4" />
-      {label}
-    </Link>
-  );
-}
-
 export function TextInput({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return (
     <label className="grid gap-1 text-sm font-medium text-gray-700">
       {label}
       <input
-        className="min-h-10 rounded-md border border-gray-300 px-3 text-sm"
+        className="min-h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
         onChange={(event) => onChange(event.target.value)}
         value={value}
       />

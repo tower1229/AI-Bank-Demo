@@ -113,7 +113,7 @@ export function InvestmentOrderEntryPage({
 
   return (
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Investment Order Entry" detail="Choose a funding account, product, and subscription amount." />
+      <SectionHeader title="Order Details" detail="Choose a funding account, product, and subscription amount." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
         <TextInput label="Funding account number" value={form.accountNumber} onChange={(accountNumber) => setForm({ ...form, accountNumber })} />
         <label className="grid gap-1 text-sm font-medium text-gray-700">

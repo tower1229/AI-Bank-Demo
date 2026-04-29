@@ -146,7 +146,7 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
 
   return (
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="New Client Application" detail="Capture KYC, source-of-funds, and initial funding details." />
+      <SectionHeader title="Applicant Profile" detail="Capture KYC, source-of-funds, and initial funding details." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
         <TextInput label="Customer name" value={form.customerName} onChange={(customerName) => setForm({ ...form, customerName })} />
         <div className="grid gap-4 sm:grid-cols-2">

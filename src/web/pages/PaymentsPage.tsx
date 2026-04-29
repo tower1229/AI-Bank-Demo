@@ -104,7 +104,7 @@ export function PaymentInstructionPage({ runAction }: { runAction: RunAction }) 
 
   return (
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Payment Instruction" detail="Book an internal USD account-to-account transfer." />
+      <SectionHeader title="Transfer Details" detail="Book an internal USD account-to-account transfer." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
         <TextInput label="From account number" value={form.fromAccountNumber} onChange={(fromAccountNumber) => setForm({ ...form, fromAccountNumber })} />
         <TextInput label="To account number" value={form.toAccountNumber} onChange={(toAccountNumber) => setForm({ ...form, toAccountNumber })} />

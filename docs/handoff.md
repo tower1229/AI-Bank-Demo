@@ -16,6 +16,7 @@ The repository now contains a working vertical demo slice:
 - Health, seed status, dashboard, onboarding, customer, transfer, product, and audit APIs.
 - Unauthenticated demo MCP endpoint exposing business-action tools.
 - Web console for onboarding creation/approval, customer portfolios, internal transfers, product purchases, and audit review.
+- Worker/MCP smoke tests covering payment-instruction listing, write confirmation rejection, product listing, MCP tool discovery, and MCP rejected tool-call display messages.
 
 The browser-facing system name is now `Core Bank System`. The broader project/docs may still refer to `AI Bank Demo` as the overall demo initiative.
 
@@ -120,6 +121,14 @@ Completed locally:
 - `curl http://localhost:8787/api/dashboard`
 - HTTP smoke: create onboarding application, approve it, transfer funds, purchase product.
 - MCP smoke: list tools, search customers, create transfer.
+- Automated tests: `src/bank/service.test.ts` and `src/worker/smoke.test.ts`, 11 tests passing locally.
+
+Browser automation note:
+
+- The Codex in-app browser runtime issue was resolved by installing and switching nvm4w to Node v22.22.0.
+- Local Worker dev was reachable at `http://127.0.0.1:8787`; API-level checks for health, dashboard, customers, and transfers succeeded.
+- Browser route smoke checks passed for dashboard, onboarding list/new, client book/detail, payments list/new, investment orders list/new, and audit log.
+- Browser workflow QA passed for onboarding submission, web approval, internal USD transfer, investment product purchase, dashboard update, customer search, and audit-log persistence.
 
 Observed seed counts:
 
@@ -144,7 +153,7 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
 
 ## Recommended Next Implementation Order
 
-1. Verify UI interactions in browser against local Wrangler dev.
+1. Complete full visual browser QA against local Wrangler dev.
    - Dashboard refresh after writes.
    - Onboarding create and approve.
    - Customer portfolio details.
@@ -159,7 +168,6 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
    - Run Telegram demo script end to end.
 
 3. Harden after demo validation.
-   - Add fuller Worker API smoke tests.
    - Add MCP transport compatibility tests if OpenClaw requires SSE-specific behavior.
    - Add a repeatable reset/seed command for demo rehearsals.
 
