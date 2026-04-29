@@ -1,0 +1,220 @@
+import { describe, expect, it } from "vitest";
+import {
+  BankServiceError,
+  createOnboardingApplication,
+  createTransfer,
+  purchaseProduct,
+  type OperationContext
+} from "./service";
+
+const context: OperationContext = {
+  source: "manual_web",
+  operatorId: "test-operator",
+  operatorDisplayName: "Test Operator",
+  confirmationText: "Confirmed in test"
+};
+
+describe("bank service validation", () => {
+  it("rejects write operations without confirmation", async () => {
+    await expect(
+      createOnboardingApplication({} as D1Database, {
+        confirmed: false,
+        customerName: "Test Client",
+        documentCaptureMethod: "manual_text",
+        documentProvided: true,
+        documentNumber: "TEST12345",
+        residentialAddress: "1 Test Street",
+        occupationTitle: "Investor",
+        initialDepositCents: 100_000_00,
+        currency: "USD",
+        sourceOfFunds: "Company dividends",
+        isPep: false
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "CONFIRMATION_REQUIRED" });
+  });
+
+  it("blocks minor onboarding applications before writing", async () => {
+    await expect(
+      createOnboardingApplication({} as D1Database, {
+        confirmed: true,
+        customerName: "Kevin Lin",
+        documentCaptureMethod: "manual_text",
+        documentProvided: true,
+        documentType: "passport",
+        documentNumber: "MINOR12345",
+        dateOfBirth: "2015-01-01",
+        documentExpiryDate: "2035-01-01",
+        nationality: "Demo Republic",
+        residentialAddress: "12 Test Avenue",
+        occupationTitle: "Student",
+        initialDepositCents: 300_000_00,
+        currency: "USD",
+        sourceOfFunds: "Family gift",
+        isPep: false
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "CUSTOMER_UNDER_18" });
+  });
+
+  it("marks PEP onboarding as enhanced review", async () => {
+    const db = new OnboardingFakeD1();
+    const result = await createOnboardingApplication(db as unknown as D1Database, {
+      confirmed: true,
+      customerName: "Olivia Tan",
+      documentCaptureMethod: "manual_text",
+      documentProvided: true,
+      documentType: "passport",
+      documentNumber: "PEP12345",
+      dateOfBirth: "1980-01-01",
+      documentExpiryDate: "2035-01-01",
+      nationality: "Demo Republic",
+      residentialAddress: "9 Orchard Road",
+      occupationTitle: "Listed company director",
+      initialDepositCents: 1_200_000_00,
+      currency: "USD",
+      sourceOfFunds: "Corporate equity sale",
+      isPep: true
+    }, context);
+
+    expect(result.application.initialReview).toBe("enhanced_review");
+    expect(result.displayMessage).toContain("pending approval");
+  });
+
+  it("rejects insufficient transfer balance", async () => {
+    const db = new LookupFakeD1();
+
+    await expect(
+      createTransfer(db as unknown as D1Database, {
+        confirmed: true,
+        fromAccountNumber: "PB-USD-LOW",
+        toAccountNumber: "PB-USD-HIGH",
+        amountCents: 5_000_000_00,
+        currency: "USD"
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "INSUFFICIENT_BALANCE" });
+  });
+
+  it("requires acknowledgement for higher-risk product purchases", async () => {
+    const db = new LookupFakeD1();
+
+    await expect(
+      purchaseProduct(db as unknown as D1Database, {
+        confirmed: true,
+        accountNumber: "PB-USD-HIGH",
+        productId: "high-risk-product",
+        amountCents: 500_000_00,
+        currency: "USD"
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "RISK_MISMATCH_ACK_REQUIRED" });
+  });
+});
+
+class OnboardingFakeD1 {
+  private application: Record<string, unknown> | null = null;
+
+  prepare(sql: string) {
+    return {
+      bind: (...args: unknown[]) => ({
+        run: async () => {
+          if (sql.includes("INSERT INTO onboarding_applications")) {
+            this.application = {
+              id: args[0],
+              status: "pending_approval",
+              customerName: args[1],
+              documentCaptureMethod: args[2],
+              documentProvided: args[3],
+              documentType: args[4],
+              documentNumber: args[5],
+              documentExpiryDate: args[6],
+              dateOfBirth: args[7],
+              nationality: args[8],
+              residentialAddress: args[9],
+              occupationTitle: args[10],
+              initialDepositCents: args[11],
+              currency: args[12],
+              sourceOfFunds: args[13],
+              isPep: args[14],
+              initialReview: args[15],
+              submittedSource: args[16],
+              submittedBy: args[17],
+              originalUserText: args[18],
+              confirmationText: args[20],
+              approvedBy: null,
+              approvedAt: null,
+              createdCustomerId: null,
+              createdAccountId: null,
+              createdAt: args[21],
+              updatedAt: args[22]
+            };
+          }
+          return { success: true };
+        },
+        first: async () => {
+          if (sql.includes("FROM onboarding_applications")) {
+            return this.application;
+          }
+          return null;
+        }
+      })
+    };
+  }
+}
+
+class LookupFakeD1 {
+  prepare(sql: string) {
+    return {
+      bind: (...args: unknown[]) => ({
+        first: async () => {
+          if (sql.includes("FROM accounts")) {
+            const accountNumber = args[0];
+            return accountNumber === "PB-USD-LOW"
+              ? {
+                  id: "account-low",
+                  customer_id: "customer-medium",
+                  account_number: "PB-USD-LOW",
+                  currency: "USD",
+                  balance_cents: 300_000_00,
+                  status: "active"
+                }
+              : {
+                  id: "account-high",
+                  customer_id: "customer-medium",
+                  account_number: "PB-USD-HIGH",
+                  currency: "USD",
+                  balance_cents: 1_000_000_00,
+                  status: "active"
+                };
+          }
+
+          if (sql.includes("FROM customers")) {
+            return {
+              id: "customer-medium",
+              display_name: "Zhang San",
+              legal_name: "Zhang San",
+              risk_profile: "medium",
+              status: "active"
+            };
+          }
+
+          if (sql.includes("FROM products")) {
+            return {
+              id: "high-risk-product",
+              name: "Private Equity Growth Fund",
+              risk_level: "high",
+              currency: "USD",
+              minimum_subscription_cents: 250_000_00,
+              lockup_months: 60,
+              expected_yield_label: "Long-term private equity growth",
+              status: "active"
+            };
+          }
+
+          return null;
+        }
+      })
+    };
+  }
+
+  async batch() {
+    throw new BankServiceError("UNEXPECTED_WRITE", "The test should fail before writing.");
+  }
+}

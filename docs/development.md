@@ -39,7 +39,6 @@ cp .env.example .dev.vars
 
 Fill in local values:
 
-- `BANK_MCP_SECRET`
 - `TELEGRAM_BOT_TOKEN`
 - `CLOUDFLARE_D1_DATABASE_ID`
 
@@ -62,17 +61,7 @@ npx wrangler@latest d1 create ai-bank-demo-db
 
 Store the returned `database_id` locally and later in `wrangler.toml`.
 
-Generate the MCP shared secret:
-
-```bash
-openssl rand -hex 32
-```
-
-After the Worker exists, set the remote secret:
-
-```bash
-npx wrangler@latest secret put BANK_MCP_SECRET
-```
+The v1 MCP endpoint is demo-internal and intentionally does not require an authorization secret.
 
 ## OpenClaw Preparation
 
@@ -93,7 +82,7 @@ openclaw agents list --bindings
 openclaw logs --follow
 ```
 
-The Telegram bot has already been tested enough to show that OpenClaw receives DM messages and replies with the AI Bank Demo persona. MCP tool connectivity is not yet implemented.
+The Telegram bot has already been tested enough to show that OpenClaw receives DM messages and replies with the AI Bank Demo persona. MCP tool connectivity should now be verified against `/mcp`.
 
 ## Phase 1 Commands
 
@@ -125,15 +114,18 @@ Then open:
 http://localhost:8787
 ```
 
-Useful read-only endpoints:
+Useful endpoints:
 
 ```text
 GET /api/health
 GET /api/seed/status
 GET /api/dashboard
+GET /api/customers
+POST /api/onboarding/applications
+POST /api/transfers
+POST /api/product-purchases
+POST /mcp
 ```
-
-The `/mcp` endpoint is intentionally a Phase 2 placeholder and returns `501`.
 
 ## Working Tree Hygiene
 

@@ -104,10 +104,7 @@ Streamable HTTP example:
 ```bash
 openclaw mcp set ai-bank '{
   "url": "https://<bank-demo-domain>/mcp",
-  "transport": "streamable-http",
-  "headers": {
-    "Authorization": "Bearer <demo-secret>"
-  }
+  "transport": "streamable-http"
 }'
 ```
 
@@ -115,10 +112,7 @@ SSE/HTTP may also be used if the runtime adapter requires it:
 
 ```bash
 openclaw mcp set ai-bank '{
-  "url": "https://<bank-demo-domain>/mcp",
-  "headers": {
-    "Authorization": "Bearer <demo-secret>"
-  }
+  "url": "https://<bank-demo-domain>/mcp"
 }'
 ```
 
@@ -126,13 +120,13 @@ The exact MCP transport must be verified against the running OpenClaw server.
 
 ## Security Boundary
 
-This is a public demo bot, but the bank MCP endpoint should still require a shared demo secret.
+This is a public demo bot. The bank MCP endpoint is intentionally unauthenticated in v1 to keep the demo focused on business operations rather than auth.
 
 Recommended v1 boundaries:
 
 - Telegram bot is public.
 - OpenClaw Gateway is not exposed as a public unauthenticated HTTP endpoint.
-- Bank MCP requires an authorization header.
+- Bank MCP uses the built-in demo operator account and does not require an authorization header.
 - Bank API may be public for the demo web console but must only operate on demo data.
 - No real personal data or real financial data should be entered.
 
@@ -176,9 +170,6 @@ After deploy:
 
 ## Open Items for Implementation
 
-- Choose exact Worker MCP library or protocol implementation.
-- Decide whether frontend static assets are served by Worker or Cloudflare Pages.
-- Define D1 migration schema.
-- Define service-layer TypeScript types.
-- Add seed command and reset command for repeatable demos.
-- Add a simple health endpoint and deployment smoke test.
+- Verify the exact MCP transport against the running OpenClaw server.
+- Add remote D1 migration and seed scripts if the deployment target needs separate commands.
+- Run the Telegram demo script end to end after registering the deployed MCP endpoint.

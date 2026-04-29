@@ -1,5 +1,5 @@
 import { handleApi } from "./api";
-import { json } from "./http";
+import { handleMcp } from "./mcp";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -10,14 +10,7 @@ export default {
     }
 
     if (url.pathname === "/mcp" || url.pathname.startsWith("/mcp/")) {
-      return json(
-        {
-          ok: false,
-          errorCode: "MCP_NOT_IMPLEMENTED",
-          displayMessage: "The Bank MCP endpoint is reserved for Phase 2 and is not implemented yet."
-        },
-        { status: 501 }
-      );
+      return handleMcp(request, env);
     }
 
     return env.ASSETS.fetch(request);

@@ -4,7 +4,7 @@ Demo project for operating a simulated private banking system through Telegram n
 
 ## Current Baseline
 
-The confirmed v1 direction is documented before implementation:
+The confirmed v1 direction and current implementation are documented here:
 
 - [Agent guide](AGENTS.md)
 - [Requirements](docs/requirements.md)
@@ -32,7 +32,7 @@ The web console and MCP tools must reuse the same banking service layer so manua
 
 ## Development State
 
-This repository has the Phase 1 scaffold implemented: Cloudflare Worker, React/Vite console, D1 migration, seed SQL, and read-only dashboard APIs.
+This repository has a vertical demo slice implemented: Cloudflare Worker, React/Vite console, D1 migration, seed SQL, shared bank service layer, write APIs, unauthenticated demo MCP tools, and manual web operations for onboarding, approval, transfers, product purchases, customer portfolios, and audit logs.
 
 Local secrets belong in `.env` or `.dev.vars`; use `.env.example` as the template and never commit real tokens.
 

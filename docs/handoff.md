@@ -6,18 +6,20 @@ Date: 2026-04-29
 
 The project is an AI Bank Demo for showing Telegram natural language control of a simulated private banking system through OpenClaw and MCP.
 
-The repository now contains the Phase 1 engineering scaffold and data layer:
+The repository now contains a working vertical demo slice:
 
 - TypeScript + React/Vite frontend.
 - Cloudflare Worker serving API routes and Vite static assets.
 - D1 migration for the v1 demo entities.
 - Repeatable local seed SQL.
-- Read-only health, seed status, and dashboard APIs.
-- Minimal web console showing seed metrics, clients, products, and recent audit activity.
+- Shared `src/bank` service layer for manual web and MCP operations.
+- Health, seed status, dashboard, onboarding, customer, transfer, product, and audit APIs.
+- Unauthenticated demo MCP endpoint exposing business-action tools.
+- Web console for onboarding creation/approval, customer portfolios, internal transfers, product purchases, and audit review.
 
 The browser-facing system name is now `Core Bank System`. The broader project/docs may still refer to `AI Bank Demo` as the overall demo initiative.
 
-Full write operations, MCP tools, and manual business forms are not implemented yet.
+Full production authentication, real KYC/compliance, and real banking integrations remain out of scope.
 
 ## Decisions Already Locked
 
@@ -66,9 +68,9 @@ Interpretation:
 
 - Telegram bot wiring is likely correct.
 - `ai-bank` routing and prompt behavior are likely correct.
-- Bank MCP connectivity is not yet verified because the MCP service has not been implemented.
+- Bank MCP connectivity should now be verified against the deployed `/mcp` endpoint.
 
-The Worker currently reserves `/mcp` and returns `501 MCP_NOT_IMPLEMENTED`.
+The Worker currently implements `/mcp` without authorization for demo use.
 
 ## Cross-Device Resume
 
@@ -101,9 +103,9 @@ Expected current behavior:
 - `/api/health` returns ok and says `Core Bank System API and D1 are reachable.`
 - `/api/seed/status` reports seeded data.
 - `/api/dashboard` returns non-empty metrics, customers, products, and recent activity.
-- `/mcp` returns `501 MCP_NOT_IMPLEMENTED`.
+- `/mcp` returns the MCP tool list on GET and supports JSON-RPC `initialize`, `tools/list`, and `tools/call` on POST.
 
-## Phase 1 Verification
+## Vertical Slice Verification
 
 Completed locally:
 
@@ -116,7 +118,8 @@ Completed locally:
 - `curl http://localhost:8787/api/health`
 - `curl http://localhost:8787/api/seed/status`
 - `curl http://localhost:8787/api/dashboard`
-- `curl http://localhost:8787/mcp`
+- HTTP smoke: create onboarding application, approve it, transfer funds, purchase product.
+- MCP smoke: list tools, search customers, create transfer.
 
 Observed seed counts:
 
@@ -141,54 +144,30 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
 
 ## Recommended Next Implementation Order
 
-1. Implement shared bank service layer.
-   - Validation.
-   - Onboarding application creation.
-   - Onboarding approval.
-   - Customer search.
-   - Internal transfer.
-   - Product listing.
-   - Product purchase.
-   - Portfolio query.
+1. Verify UI interactions in browser against local Wrangler dev.
+   - Dashboard refresh after writes.
+   - Onboarding create and approve.
+   - Customer portfolio details.
+   - Manual transfer and product purchase.
+   - Audit log entries.
 
-2. Implement write HTTP API routes.
-   - Onboarding create/approve.
-   - Customer search and portfolio.
-   - Internal transfer.
-   - Product purchase.
-   - Audit log reads.
-
-3. Implement MCP endpoint.
-   - Business-action tools only.
-   - Require `BANK_MCP_SECRET`.
-   - Return structured data plus `displayMessage`.
-
-4. Expand web console.
-   - Onboarding create/list/detail/approve.
-   - Customer/account/portfolio view.
-   - Transfer form.
-   - Product purchase form.
-   - Audit log.
-
-5. Add validation and smoke tests.
-   - Service-layer unit tests.
-   - Worker API smoke tests.
-   - MCP tool-list and tool-call smoke tests.
-   - Frontend build.
-
-6. Deploy and connect OpenClaw MCP.
+2. Deploy and connect OpenClaw MCP.
    - Apply D1 migrations.
    - Seed remote data.
-   - Set `BANK_MCP_SECRET`.
    - Deploy Worker.
    - Register MCP endpoint in OpenClaw.
    - Run Telegram demo script end to end.
 
+3. Harden after demo validation.
+   - Add fuller Worker API smoke tests.
+   - Add MCP transport compatibility tests if OpenClaw requires SSE-specific behavior.
+   - Add a repeatable reset/seed command for demo rehearsals.
+
 ## Do Not Change Without Reconfirming
 
 - Do not move Telegram webhook handling into Cloudflare.
-- Do not make the web console read-only.
 - Do not expose onboarding approval to the Telegram agent in v1.
+- Do not add MCP authorization unless the demo scope is reconfirmed.
 - Do not add full real KYC, tax, sanctions, or payment logic.
 - Do not add complex multi-role auth in v1.
 - Do not store original identity document images in the bank system.

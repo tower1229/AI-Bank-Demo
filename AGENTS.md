@@ -6,7 +6,7 @@ Build a demo where a private bank relationship manager uses Telegram natural lan
 
 ## Current Status
 
-The repository is in planning/setup state. Requirements, OpenClaw behavior, demo script, deployment notes, and setup preparation are documented. Application code has not been implemented yet.
+The repository has a working vertical demo slice: shared bank service layer, Cloudflare Worker API routes, unauthenticated demo MCP tools, D1 persistence, smoke tests, and a React web console for onboarding, approval, transfers, product purchases, customer portfolios, and audit logs.
 
 ## Source of Truth
 
@@ -50,6 +50,7 @@ The web console and MCP tools must call the same bank service layer. Do not impl
 - Target Cloudflare Worker + D1 + React/Vite.
 - Keep `src/bank` as the shared service layer once implementation begins.
 - Prefer business-action MCP tools over low-level CRUD tools.
+- MCP is a demo-internal endpoint in v1 and intentionally does not implement authorization.
 - Keep secrets out of git. `.env` and `.dev.vars` are local only.
 
 ## Secrets
@@ -59,7 +60,6 @@ Do not read, print, or commit real tokens. Use `.env.example` as the tracked tem
 Known local-only secrets include:
 
 - `TELEGRAM_BOT_TOKEN`
-- `BANK_MCP_SECRET`
 - Cloudflare account credentials
 - OpenClaw gateway/auth tokens
 
