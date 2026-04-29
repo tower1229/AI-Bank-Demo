@@ -1,0 +1,353 @@
+{
+    "meta": {
+        "lastTouchedVersion": "2026.4.12",
+        "lastTouchedAt": "2026-04-29T13:01:58.612Z"
+    },
+    "wizard": {
+        "lastRunAt": "2026-03-30T08:37:45.583Z",
+        "lastRunVersion": "2026.3.28",
+        "lastRunCommand": "configure",
+        "lastRunMode": "local"
+    },
+    "auth": {
+        "profiles": {
+            "google:default": {
+                "provider": "google",
+                "mode": "api_key"
+            }
+        }
+    },
+    "models": {
+        "mode": "merge",
+        "providers": {}
+    },
+    "agents": {
+        "defaults": {
+            "model": {
+                "primary": "google/gemini-3.1-pro-preview"
+            },
+            "models": {
+                "google/gemini-3.1-pro-preview": {
+                    "alias": "gemini"
+                }
+            },
+            "workspace": "/root/.openclaw/workspace",
+            "compaction": {
+                "mode": "safeguard"
+            },
+            "heartbeat": {
+                "every": "0m",
+                "session": "proactive-greeting",
+                "target": "last",
+                "lightContext": true,
+                "isolatedSession": true
+            },
+            "maxConcurrent": 4,
+            "subagents": {
+                "maxConcurrent": 8
+            }
+        },
+        "list": [
+            {
+                "id": "main"
+            },
+            {
+                "id": "lingxi-dev",
+                "name": "lingxi-dev",
+                "workspace": "/root/.openclaw/workspace-lingxi-dev",
+                "agentDir": "/root/.openclaw/agents/lingxi-dev/agent",
+                "sandbox": {
+                    "mode": "off",
+                    "scope": "agent"
+                },
+                "tools": {
+                    "allow": [
+                        "exec",
+                        "read",
+                        "write"
+                    ]
+                }
+            },
+            {
+                "id": "ai-bank",
+                "name": "AI Bank Demo",
+                "workspace": "/root/.openclaw/workspace-ai-bank"
+            }
+        ]
+    },
+    "tools": {
+        "web": {
+            "search": {
+                "enabled": true
+            },
+            "fetch": {
+                "enabled": true
+            }
+        }
+    },
+    "bindings": [
+        {
+            "type": "route",
+            "agentId": "lingxi-dev",
+            "match": {
+                "channel": "telegram",
+                "accountId": "default",
+                "peer": {
+                    "kind": "group",
+                    "id": "-5070318702"
+                }
+            }
+        },
+        {
+            "type": "route",
+            "agentId": "ai-bank",
+            "match": {
+                "channel": "telegram",
+                "accountId": "ai-bank-demo"
+            }
+        }
+    ],
+    "messages": {
+        "ackReactionScope": "group-mentions"
+    },
+    "commands": {
+        "native": "auto",
+        "nativeSkills": "auto",
+        "restart": true,
+        "ownerDisplay": "raw"
+    },
+    "hooks": {
+        "internal": {
+            "enabled": true,
+            "entries": {
+                "session-memory": {
+                    "enabled": true
+                }
+            }
+        }
+    },
+    "channels": {
+        "telegram": {
+            "enabled": true,
+            "groups": {
+                "-5070318702": {
+                    "requireMention": false
+                }
+            },
+            "accounts": {
+                "default": {
+                    "dmPolicy": "allowlist",
+                    "botToken": "8640288142:AAHAimXFim4lvI5_78gwqCBOZfsy00f66Bw",
+                    "allowFrom": [
+                        "5424534900"
+                    ],
+                    "groupAllowFrom": [
+                        "5424534900"
+                    ],
+                    "groupPolicy": "allowlist",
+                    "streaming": {
+                        "mode": "partial"
+                    }
+                },
+                "ai-bank-demo": {
+                    "name": "AI Bank Demo Bot",
+                    "enabled": true,
+                    "botToken": "8739060127:AAHPKhYUAK4E8d4_lQR4Tc6V4HVHLF9B17E",
+                    "dmPolicy": "open",
+                    "allowFrom": [
+                        "*"
+                    ],
+                    "groupPolicy": "disabled"
+                }
+            }
+        },
+        "qqbot": {
+            "enabled": true,
+            "appId": "1903102995",
+            "clientSecret": "xqX0GJ8k9KI3kFXb"
+        }
+    },
+    "gateway": {
+        "port": 30744,
+        "mode": "local",
+        "bind": "lan",
+        "controlUi": {
+            "basePath": "/ojkdt9",
+            "allowedOrigins": [
+                "http://43.153.157.112:30744"
+            ],
+            "dangerouslyAllowHostHeaderOriginFallback": false,
+            "allowInsecureAuth": true,
+            "dangerouslyDisableDeviceAuth": true
+        },
+        "auth": {
+            "mode": "token",
+            "token": "63f6d400d9d79c70e9aa6f15bcf7cf98cbc1d14376be0d72"
+        },
+        "tailscale": {
+            "mode": "off",
+            "resetOnExit": false
+        }
+    },
+    "skills": {
+        "install": {
+            "nodeManager": "npm"
+        },
+        "entries": {
+            "stella-selfie": {
+                "enabled": true,
+                "env": {
+                    "GEMINI_API_KEY": "AIzaSyAQLah8dWp11c3f8n_p2lEVXvKx2Gsh9Vg",
+                    "LAOZHANG_API_KEY": "sk-LqyVb36Etl7tygFaAc813dAb0eEc4a23A2B53158C5Bb3554",
+                    "FAL_KEY": "b92332f3-0841-41b4-9200-04c639cf7ba4:c42a979a73ae9836d593bda5f3504f42",
+                    "Provider": "laozhang"
+                }
+            }
+        }
+    },
+    "plugins": {
+        "allow": [
+            "wecom",
+            "adp-openclaw",
+            "telegram",
+            "openclaw-qqbot",
+            "stella-timeline-plugin",
+            "qqbot",
+            "google",
+            "brave",
+            "memory-core"
+        ],
+        "entries": {
+            "feishu": {
+                "enabled": false
+            },
+            "telegram": {
+                "enabled": true,
+                "config": {}
+            },
+            "brave": {
+                "enabled": true,
+                "config": {
+                    "webSearch": {
+                        "apiKey": "BSAdyQ3dvxam48PbmcKbEAnifh8Ium4"
+                    }
+                }
+            },
+            "openclaw-qqbot": {
+                "enabled": true,
+                "config": {}
+            },
+            "adp-openclaw": {
+                "enabled": true,
+                "config": {}
+            },
+            "memory-tdai": {
+                "enabled": false
+            },
+            "stella-timeline-plugin": {
+                "enabled": true,
+                "config": {
+                    "enableTrace": true,
+                    "enablePromptTimelineContext": true,
+                    "promptTimelineLookbackDays": 7,
+                    "promptTimelineMacroThresholdMinutes": 120,
+                    "promptTimelineDirectCurrentStateAnswers": true,
+                    "reasonerTimeoutMs": 90000,
+                    "reasonerSessionPrefix": "timeline-reasoner",
+                    "reasonerMessageLimit": 24,
+                    "sessionHistoryLimit": 12,
+                    "memorySearchMaxResults": 6,
+                    "proactiveGreeting": {
+                        "enabled": false,
+                        "sessionKey": "proactive-greeting",
+                        "singleUserGuard": true,
+                        "idleThresholdHours": 7,
+                        "minHoursBetweenCheckins": 24,
+                        "minHoursSinceNonSocialOutbound": 6,
+                        "unansweredPenaltyThreshold": 2,
+                        "unansweredPenaltyIdleHours": 72,
+                        "pendingSendTimeoutMinutes": 20
+                    }
+                }
+            },
+            "google": {
+                "enabled": true
+            }
+        },
+        "installs": {
+            "openclaw-qqbot": {
+                "source": "npm",
+                "spec": "@tencent-connect/openclaw-qqbot@1.6.5",
+                "installPath": "/root/.openclaw/extensions/openclaw-qqbot",
+                "version": "1.6.5",
+                "resolvedName": "@tencent-connect/openclaw-qqbot",
+                "resolvedVersion": "1.6.5",
+                "resolvedSpec": "@tencent-connect/openclaw-qqbot@1.6.5",
+                "integrity": "sha512-791d8Jgq8VJMeK5NOmIqnXX+nZJpr49Eu5wBvtak9a2TBQukN3WQMqvwoHtZLwJkBocls664PHj/hNhVmBb7Mg==",
+                "shasum": "22ccc6173a88ea3ba9c91caa65738ecd1b694162",
+                "resolvedAt": "2026-03-30T14:21:11.260Z",
+                "installedAt": "2026-03-30T14:23:17.195Z"
+            },
+            "ddingtalk": {
+                "source": "npm",
+                "spec": "@largezhou/ddingtalk@2.0.1",
+                "installPath": "/root/.openclaw/extensions/ddingtalk",
+                "version": "2.0.1",
+                "resolvedName": "@largezhou/ddingtalk",
+                "resolvedVersion": "2.0.1",
+                "resolvedSpec": "@largezhou/ddingtalk@2.0.1",
+                "integrity": "sha512-qKDndqVb6nj1CJ+IX+9DF86qhxrjvJYerk3ooir+TfiQD7RI8/HminvGzXf5g8SRsFF/wWP8vF/Gha5HCNfTJQ==",
+                "shasum": "9a8c22c264691f8a7bd6966cab998847c95dfd4d",
+                "resolvedAt": "2026-03-30T14:23:19.375Z",
+                "installedAt": "2026-03-30T14:24:12.421Z"
+            },
+            "adp-openclaw": {
+                "source": "npm",
+                "spec": "adp-openclaw@0.0.71",
+                "installPath": "/root/.openclaw/extensions/adp-openclaw",
+                "version": "0.0.71",
+                "resolvedName": "adp-openclaw",
+                "resolvedVersion": "0.0.71",
+                "resolvedSpec": "adp-openclaw@0.0.71",
+                "integrity": "sha512-3lpHJR0Al+a8OGH4/a1mZ1UIhlokKWW7uvo5BAw44OZgvbfzm4QpzGUXeLm0+btWsOTbZd2LWfwaK04J6ISjUA==",
+                "shasum": "17e07b3d794333e5c28ed74a343b8eba5727c818",
+                "resolvedAt": "2026-03-30T14:24:14.022Z",
+                "installedAt": "2026-03-30T14:24:16.616Z"
+            },
+            "memory-tdai": {
+                "source": "npm",
+                "spec": "@tdai/memory-tdai@0.1.2",
+                "installPath": "/root/.openclaw/extensions/memory-tdai",
+                "version": "0.1.2",
+                "resolvedName": "@tdai/memory-tdai",
+                "resolvedVersion": "0.1.2",
+                "resolvedSpec": "@tdai/memory-tdai@0.1.2",
+                "integrity": "sha512-TOrv+qMGxk9yLuu3eCPlPayTt3B9IjjPmHT7NfyqQk0MiOu/HN5LuE3UxTGscPIdGUoLfAd3SCM1R/fNm34cAQ==",
+                "shasum": "0f9ad8d345a0802fa7b3f0a9f84789269ed920d7",
+                "resolvedAt": "2026-03-30T14:24:17.416Z",
+                "installedAt": "2026-03-30T14:24:55.110Z"
+            },
+            "stella-timeline-plugin": {
+                "source": "npm",
+                "spec": "stella-timeline-plugin",
+                "installPath": "/root/.openclaw/extensions/stella-timeline-plugin",
+                "version": "2.8.9",
+                "resolvedName": "stella-timeline-plugin",
+                "resolvedVersion": "2.8.9",
+                "resolvedSpec": "stella-timeline-plugin@2.8.9",
+                "integrity": "sha512-q4TEoJ06AEqI0i0hoaJT+cOPCpI/1z30MruIRzklhdIDU9ZNT6I+cpqzA9Owo69LyVj5fU+KwKoQNtybl9b7sQ==",
+                "shasum": "3000c60a0b7c99f4d07d18c09fcf1f890b2910d1",
+                "resolvedAt": "2026-04-03T06:36:27.454Z",
+                "installedAt": "2026-04-03T06:36:30.555Z"
+            }
+        }
+    },
+    "mcp": {
+        "servers": {
+            "ai-bank": {
+                "url": "https://ai-bank-demo.refined-x.workers.dev/mcp",
+                "connectionTimeout": 10000
+            }
+        }
+    }
+}
