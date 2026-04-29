@@ -21,7 +21,12 @@ interface AppData {
   auditLogs: AuditLogEntry[];
 }
 
-const navigation: Tab[] = ["Dashboard", "Onboarding", "Customers", "Transfers", "Products", "Audit"];
+const navigationGroups: { name: string; items: Tab[] }[] = [
+  { name: "Overview", items: ["Dashboard"] },
+  { name: "Operations", items: ["Onboarding", "Customers", "Products"] },
+  { name: "Core", items: ["Transfers"] },
+  { name: "Security", items: ["Audit"] }
+];
 
 const emptyData: AppData = {
   health: null,
@@ -90,49 +95,60 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 lg:flex">
-      <aside className="bg-[#111111] text-gray-400 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64">
-        <div className="flex min-h-16 items-center gap-3 border-b border-white/10 px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#FF5A00] text-sm font-black text-white">
-            AB
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white">Core Bank System</p>
-            <p className="text-xs text-gray-500">Private banking console</p>
-          </div>
-        </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 py-3 lg:block lg:space-y-1 lg:overflow-visible">
-          {navigation.map((item) => (
-            <button
-              className={`min-h-10 shrink-0 rounded-md px-3 text-left text-sm font-medium transition lg:w-full ${
-                item === activeTab
-                  ? "border-l-4 border-[#FF5A00] bg-white/10 text-white"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
-              }`}
-              key={item}
-              onClick={() => setActiveTab(item)}
-              type="button"
-            >
-              {item}
-            </button>
+      <aside className="bg-[#111111] text-gray-400 lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 flex flex-col">
+        <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-6">
+          {navigationGroups.map((group) => (
+            <div key={group.name}>
+              <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                {group.name}
+              </h3>
+              <div className="space-y-1">
+                {group.items.map((item) => (
+                  <button
+                    className={`flex w-full min-h-9 items-center rounded-md px-3 text-sm font-medium transition ${
+                      item === activeTab
+                        ? "bg-[#1F1F1F] text-[#FF5A00] border-l-[3px] border-[#FF5A00] pl-[calc(0.75rem-3px)]"
+                        : "text-gray-400 hover:bg-white/5 hover:text-white"
+                    }`}
+                    key={item}
+                    onClick={() => setActiveTab(item)}
+                    type="button"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
+
+        <div className="mt-auto border-t border-white/10 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-6 w-6 items-center justify-center rounded bg-[#FF5A00] text-xs font-black text-white">
+              AB
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white tracking-wide">AI Bank Demo</p>
+              <p className="text-xs text-gray-500">Private banking console</p>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <main className="min-w-0 flex-1 lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pb-5 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-normal text-gray-500">
-                Relationship manager workspace
-              </p>
-              <h1 className="mt-2 text-3xl font-bold text-gray-900 sm:text-4xl">{activeTab}</h1>
+          <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pt-2 pb-0 md:flex-row md:items-end md:justify-between">
+            <div className="flex gap-6 overflow-x-auto">
+              <button className="border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
+                {activeTab}
+              </button>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 pb-3">
               <span className={statusClass(state)}>
                 <span className="h-2 w-2 rounded-full bg-current" />
                 {statusLabel}
               </span>
-              <span className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-600 shadow-sm">
+              <span className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 shadow-sm">
                 {data.health?.checkedAt ? formatTime(data.health.checkedAt) : "Waiting for API"}
               </span>
             </div>
@@ -319,6 +335,9 @@ function OnboardingView({
           <table className="min-w-[760px] w-full border-collapse">
             <thead>
               <tr className="border-b border-gray-200">
+                <th className="px-3 py-3 text-left w-8">
+                  <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+                </th>
                 {["Client", "Status", "Initial deposit", "Review", "Created", ""].map((heading) => (
                   <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                     {heading}
@@ -328,9 +347,16 @@ function OnboardingView({
             </thead>
             <tbody>
               {applications.map((application) => (
-                <tr className="border-b border-gray-100 last:border-0" key={application.id}>
+                <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50" key={application.id}>
+                  <td className="px-3 py-4 text-left">
+                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+                  </td>
                   <td className="px-3 py-4 text-sm font-medium text-gray-900">{application.customerName}</td>
-                  <td className="px-3 py-4 text-sm text-gray-600">{application.status.replaceAll("_", " ")}</td>
+                  <td className="px-3 py-4">
+                    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 capitalize">
+                      {application.status.replaceAll("_", " ")}
+                    </span>
+                  </td>
                   <td className="px-3 py-4 text-sm font-semibold text-gray-900">{formatUsd(application.initialDepositCents)}</td>
                   <td className="px-3 py-4 text-sm text-gray-600">{application.initialReview.replaceAll("_", " ")}</td>
                   <td className="px-3 py-4 text-sm text-gray-500">{formatTime(application.createdAt)}</td>
@@ -624,6 +650,9 @@ function AuditView({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
         <table className="min-w-[880px] w-full border-collapse">
           <thead>
             <tr className="border-b border-gray-200">
+              <th className="px-3 py-3 text-left w-8">
+                <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+              </th>
               {["Action", "Source", "Operator", "Entity", "Result", "Time"].map((heading) => (
                 <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                   {heading}
@@ -633,7 +662,10 @@ function AuditView({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
           </thead>
           <tbody>
             {auditLogs.map((log) => (
-              <tr className="border-b border-gray-100 last:border-0" key={log.id}>
+              <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50" key={log.id}>
+                <td className="px-3 py-4 text-left">
+                  <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+                </td>
                 <td className="px-3 py-4 text-sm font-medium text-gray-900">{log.action.replaceAll("_", " ")}</td>
                 <td className="px-3 py-4 text-sm text-gray-600">{log.source.replaceAll("_", " ")}</td>
                 <td className="px-3 py-4 text-sm text-gray-600">{log.operatorDisplayName ?? log.operatorId}</td>
@@ -688,6 +720,9 @@ function CustomerTable({ customers }: { customers: DashboardData["customers"] })
       <table className="min-w-[620px] w-full border-collapse">
         <thead>
           <tr className="border-b border-gray-200">
+            <th className="px-4 py-3 text-left w-8">
+              <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+            </th>
             {["Client", "Account", "Risk", "Cash balance"].map((heading) => (
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                 {heading}
@@ -698,6 +733,9 @@ function CustomerTable({ customers }: { customers: DashboardData["customers"] })
         <tbody>
           {customers.map((customer) => (
             <tr className="border-b border-gray-100 last:border-0 hover:bg-gray-50" key={customer.id}>
+              <td className="px-4 py-4 text-left">
+                <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
+              </td>
               <td className="px-4 py-4 text-sm font-medium text-gray-900">{customer.name}</td>
               <td className="px-4 py-4 text-sm text-gray-600">{customer.accountNumber}</td>
               <td className="px-4 py-4">
@@ -802,7 +840,7 @@ function RiskBadge({ risk }: { risk: RiskLevel }) {
   }[risk];
 
   return (
-    <span className={`inline-flex min-h-6 items-center rounded-full px-2 py-0.5 text-xs font-medium uppercase ${className}`}>
+    <span className={`inline-flex min-h-6 items-center rounded-md px-2 py-0.5 text-xs font-medium uppercase ${className}`}>
       {risk}
     </span>
   );
