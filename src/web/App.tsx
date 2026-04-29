@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, PaymentInstructionSummary, ProductDetail } from "../bank/service";
 import type { DashboardData, HealthData, SeedStatusData } from "../bank/types";
 import { AppShell } from "./components/AppShell";
+import { GlobalMcpToast } from "./components/GlobalMcpToast";
 import { fetchJson } from "./lib/api";
 import { getActiveNavigationItem, getRouteNavigationMeta } from "./navigation";
 import { AuditPage } from "./pages/AuditPage";
@@ -96,6 +97,7 @@ export default function App() {
       state={state}
       statusLabel={statusLabel}
     >
+      <GlobalMcpToast />
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage data={data} />} />
