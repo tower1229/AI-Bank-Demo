@@ -6,7 +6,10 @@ Demo project for operating a simulated private banking system through Telegram n
 
 The confirmed v1 direction is documented before implementation:
 
+- [Agent guide](AGENTS.md)
 - [Requirements](docs/requirements.md)
+- [Development guide](docs/development.md)
+- [Project handoff](docs/handoff.md)
 - [OpenClaw agent instructions](docs/openclaw-agent-instructions.md)
 - [Demo script](docs/demo-script.md)
 - [Deployment notes](docs/deployment.md)
@@ -26,3 +29,9 @@ Telegram DM
 ```
 
 The web console and MCP tools must reuse the same banking service layer so manual operations and AI-assisted operations produce consistent data and audit logs.
+
+## Development State
+
+This repository is currently in planning/setup state. Application code has not been implemented yet.
+
+Local secrets belong in `.env` or `.dev.vars`; use `.env.example` as the template and never commit real tokens.
