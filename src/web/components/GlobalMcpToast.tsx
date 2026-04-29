@@ -30,10 +30,6 @@ export function GlobalMcpToast() {
             // New log detected!
             if (latest.source === "telegram_openclaw" && latest.status === "success") {
               setToast(latest);
-              // Auto hide after 8 seconds
-              setTimeout(() => {
-                setToast((current) => (current?.id === latest.id ? null : current));
-              }, 8000);
             }
           }
           lastSeenIdRef.current = latest.id;
