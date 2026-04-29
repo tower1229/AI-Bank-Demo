@@ -62,6 +62,14 @@ This document defines the visual and structural design guidelines for the AI Ban
 ### 4.4 Navigation Tabs (Main Content)
 - **Top Sub-tabs**: Horizontal list, active tab has a bottom border (e.g., `border-b-2 border-violet-600` or orange) or bold text, inactive are muted.
 
+### 4.5 Page Structure and Routing
+- **List/Queue Pages**: Operational pages such as onboarding queues, payment instructions, product shelves, and audit logs should prioritize existing records in tables or searchable lists. Do not place a create/edit form beside the list on the same route.
+- **Create/Edit Pages**: New data entry flows must open on a dedicated route, usually `<section-route>/new` for create flows and `<section-route>/<id>/edit` for edits when implemented.
+- **Primary Actions**: List pages should expose one clear primary action in the page header or table toolbar, such as `New application`, `New payment`, or `New order`, linking to the dedicated form route.
+- **Form Width**: Dedicated create/edit pages should use a constrained single-column form container (`max-w-3xl`) with Back, Cancel, and final Submit/Book/Execute actions.
+- **Route Naming**: Use private-banking domain routes and labels. Current standards are `/dashboard`, `/client-lifecycle`, `/client-lifecycle/new`, `/client-book`, `/payments`, `/payments/new`, `/investment-orders`, `/investment-orders/new`, and `/audit-log`.
+- **Backwards Compatibility**: If route names are changed, keep redirects from old demo routes so shared links continue to work.
+
 ## 5. Development Implementation (Tailwind CSS)
 
 When implementing these styles, prefer using **Tailwind CSS** utility classes as they map perfectly to this design system. 
