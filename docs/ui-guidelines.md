@@ -74,6 +74,7 @@ This document defines the visual and structural design guidelines for the AI Ban
 - **Primary Actions**: List pages should expose one clear primary action in the page header or table toolbar, such as `New application`, `New payment`, or `New order`, linking to the dedicated form route.
 - **Form Width**: Dedicated create/edit pages should use a constrained single-column form container (`max-w-3xl`) with Cancel and final Submit/Book/Execute actions.
 - **Form Section Titles**: Do not repeat the page title inside the form card. The card header should name the business section, such as `Applicant Profile`, `Transfer Details`, or `Order Details`.
+- **Client Selection**: Operator-facing forms must ask for client names, not account numbers or internal ids. Use a typeahead dropdown while the operator types, show matching client names with risk/balance context, and let the service layer resolve the selected client to the underlying USD account.
 - **Route Naming**: Use private-banking domain routes and labels. Current standards are `/dashboard`, `/client-lifecycle`, `/client-lifecycle/new`, `/client-book`, `/client-book/:customerId`, `/payments`, `/payments/new`, `/investment-orders`, `/investment-orders/new`, and `/audit-log`.
 - **Backwards Compatibility**: If route names are changed, keep redirects from old demo routes so shared links continue to work.
 

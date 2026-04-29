@@ -1,8 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Plus } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import type { ProductDetail } from "../../bank/service";
-import { RiskBadge, SectionHeader, TextInput } from "../components/common";
+import type { CustomerSearchResult, ProductDetail } from "../../bank/service";
+import { CustomerTypeahead, RiskBadge, SectionHeader, TextInput } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { postJson } from "../lib/api";
 import { formatUsd, usdToCents } from "../lib/format";
@@ -66,9 +66,11 @@ export function InvestmentOrdersPage({
 }
 
 export function InvestmentOrderEntryPage({
+  customers,
   products,
   runAction
 }: {
+  customers: CustomerSearchResult[];
   products: ProductDetail[];
   runAction: RunAction;
 }) {
@@ -76,7 +78,7 @@ export function InvestmentOrderEntryPage({
   const [searchParams] = useSearchParams();
   const confirm = useConfirm();
   const [form, setForm] = useState({
-    accountNumber: "PB-USD-1028",
+    customerName: "Zhang San",
     productId: searchParams.get("productId") ?? "seed-product-balanced",
     amountUsd: "250000",
     riskMismatchAcknowledged: false
@@ -90,7 +92,7 @@ export function InvestmentOrderEntryPage({
     const productName = selectedProduct?.name ?? form.productId;
     const isConfirmed = await confirm({
       title: "Confirm Investment Order",
-      description: `Purchase ${formatUsd(amount)} of ${productName} from ${form.accountNumber}?`,
+      description: `Purchase ${formatUsd(amount)} of ${productName} for ${form.customerName}?`,
       confirmText: "Book Order"
     });
 
@@ -99,7 +101,7 @@ export function InvestmentOrderEntryPage({
     const succeeded = await runAction(async () => {
       const response = await postJson<{ displayMessage: string }>("/api/product-purchases", {
         confirmed: true,
-        accountNumber: form.accountNumber,
+        customerName: form.customerName,
         productId: form.productId,
         amountCents: amount,
         currency: "USD",
@@ -115,7 +117,13 @@ export function InvestmentOrderEntryPage({
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <SectionHeader title="Order Details" detail="Choose a funding account, product, and subscription amount." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
-        <TextInput label="Funding account number" value={form.accountNumber} onChange={(accountNumber) => setForm({ ...form, accountNumber })} />
+        <CustomerTypeahead
+          customers={customers}
+          label="Client"
+          onChange={(customerName) => setForm({ ...form, customerName })}
+          onSelect={(customer) => setForm({ ...form, customerName: customer.name })}
+          value={form.customerName}
+        />
         <label className="grid gap-1 text-sm font-medium text-gray-700">
           Product shelf item
           <select

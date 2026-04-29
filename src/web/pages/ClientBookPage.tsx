@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { CustomerPortfolio, CustomerSearchResult } from "../../bank/service";
-import { MiniTable, RiskBadge, SectionHeader } from "../components/common";
+import { CustomerTypeahead, MiniTable, RiskBadge, SectionHeader } from "../components/common";
 import { fetchJson } from "../lib/api";
 import { formatTime, formatUsd } from "../lib/format";
 
@@ -26,15 +26,22 @@ export function ClientBookPage({ initialCustomers }: { initialCustomers: Custome
 
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Client Book Search" detail="Search by client name or private banking account number." />
+      <SectionHeader title="Client Book Search" detail="Search by client name and select from matching clients." />
       <form className="mt-5 flex gap-3" onSubmit={search}>
-        <input
-          className="min-h-10 flex-1 rounded-md border border-gray-300 px-3 text-sm"
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Zhang San or PB-USD-1028"
-          value={query}
+        <div className="flex-1">
+          <CustomerTypeahead
+            customers={initialCustomers}
+            label="Client name"
+            onChange={setQuery}
+            onSelect={(customer) => {
+              setQuery(customer.name);
+              setCustomers([customer]);
+            }}
+            placeholder="Zhang San"
+            value={query}
         />
-        <button className="min-h-10 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700" type="submit">
+        </div>
+        <button className="min-h-10 self-end rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700" type="submit">
           Search
         </button>
       </form>

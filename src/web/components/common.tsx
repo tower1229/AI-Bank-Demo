@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import type { CustomerSearchResult } from "../../bank/service";
 import type { DashboardData, RiskLevel } from "../../bank/types";
 import { formatUsd } from "../lib/format";
@@ -20,6 +21,82 @@ export function TextInput({ label, value, onChange }: { label: string; value: st
         onChange={(event) => onChange(event.target.value)}
         value={value}
       />
+    </label>
+  );
+}
+
+export function CustomerTypeahead({
+  customers,
+  label,
+  onChange,
+  onSelect,
+  placeholder = "Search by client name",
+  value
+}: {
+  customers: CustomerSearchResult[];
+  label: string;
+  onChange: (value: string) => void;
+  onSelect: (customer: CustomerSearchResult) => void;
+  placeholder?: string;
+  value: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const options = useMemo(() => {
+    const query = value.trim().toLowerCase();
+    const filtered = query
+      ? customers.filter((customer) =>
+          `${customer.name} ${customer.legalName}`.toLowerCase().includes(query)
+        )
+      : customers;
+
+    return filtered.slice(0, 8);
+  }, [customers, value]);
+
+  function selectCustomer(customer: CustomerSearchResult) {
+    onSelect(customer);
+    setIsOpen(false);
+  }
+
+  return (
+    <label className="relative grid gap-1 text-sm font-medium text-gray-700">
+      {label}
+      <input
+        autoComplete="off"
+        className="min-h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-900 shadow-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-100"
+        onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+        value={value}
+      />
+      {isOpen ? (
+        <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg">
+          {options.length > 0 ? (
+            options.map((customer) => (
+              <button
+                className="flex w-full items-center justify-between gap-4 px-3 py-2 text-left text-sm hover:bg-violet-50"
+                key={`${customer.id}-${customer.accountId}`}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectCustomer(customer)}
+                type="button"
+              >
+                <span>
+                  <span className="block font-semibold text-gray-900">{customer.name}</span>
+                  <span className="block text-xs text-gray-500 capitalize">
+                    {customer.riskProfile} risk / {formatUsd(customer.balanceCents)}
+                  </span>
+                </span>
+                <span className="text-xs font-medium text-gray-400">{customer.status}</span>
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-sm text-gray-500">No matching clients.</p>
+          )}
+        </div>
+      ) : null}
     </label>
   );
 }

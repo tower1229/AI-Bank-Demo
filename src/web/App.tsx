@@ -104,9 +104,9 @@ export default function App() {
         <Route path="/client-book" element={<ClientBookPage initialCustomers={data.customers} />} />
         <Route path="/client-book/:customerId" element={<ClientPortfolioPage />} />
         <Route path="/payments" element={<PaymentsPage paymentInstructions={data.paymentInstructions} />} />
-        <Route path="/payments/new" element={<PaymentInstructionPage runAction={runAction} />} />
+        <Route path="/payments/new" element={<PaymentInstructionPage customers={data.customers} runAction={runAction} />} />
         <Route path="/investment-orders" element={<InvestmentOrdersPage products={data.products} />} />
-        <Route path="/investment-orders/new" element={<InvestmentOrderEntryPage products={data.products} runAction={runAction} />} />
+        <Route path="/investment-orders/new" element={<InvestmentOrderEntryPage customers={data.customers} products={data.products} runAction={runAction} />} />
         <Route path="/audit-log" element={<AuditPage auditLogs={data.auditLogs} />} />
         <Route path="/onboarding" element={<Navigate to="/client-lifecycle" replace />} />
         <Route path="/customers" element={<Navigate to="/client-book" replace />} />

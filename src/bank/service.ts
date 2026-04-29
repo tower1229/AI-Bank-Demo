@@ -39,8 +39,10 @@ export interface ApproveOnboardingApplicationInput extends ConfirmedInput {
 export interface CreateTransferInput extends ConfirmedInput {
   fromAccountId?: string;
   fromAccountNumber?: string;
+  fromCustomerName?: string;
   toAccountId?: string;
   toAccountNumber?: string;
+  toCustomerName?: string;
   amountCents: number;
   currency: Currency;
   memo?: string;
@@ -49,6 +51,7 @@ export interface CreateTransferInput extends ConfirmedInput {
 export interface PurchaseProductInput extends ConfirmedInput {
   accountId?: string;
   accountNumber?: string;
+  customerName?: string;
   productId: string;
   amountCents: number;
   currency: Currency;
@@ -472,8 +475,8 @@ export async function createTransfer(
     throw new BankServiceError("INVALID_AMOUNT", "Transfer amount must be greater than 0 USD.");
   }
 
-  const fromAccount = await getAccountByIdentifier(db, input.fromAccountId, input.fromAccountNumber);
-  const toAccount = await getAccountByIdentifier(db, input.toAccountId, input.toAccountNumber);
+  const fromAccount = await getAccountByIdentifier(db, input.fromAccountId, input.fromAccountNumber, input.fromCustomerName);
+  const toAccount = await getAccountByIdentifier(db, input.toAccountId, input.toAccountNumber, input.toCustomerName);
 
   if (fromAccount.id === toAccount.id) {
     throw new BankServiceError("SAME_ACCOUNT_TRANSFER", "Sender and recipient accounts cannot be the same.");
@@ -597,7 +600,7 @@ export async function purchaseProduct(
     throw new BankServiceError("INVALID_AMOUNT", "Purchase amount must be greater than 0 USD.");
   }
 
-  const account = await getAccountByIdentifier(db, input.accountId, input.accountNumber);
+  const account = await getAccountByIdentifier(db, input.accountId, input.accountNumber, input.customerName);
   const customer = await getCustomer(db, account.customer_id);
   const product = await getProduct(db, input.productId);
 
@@ -822,20 +825,39 @@ function onboardingSelectColumns(): string {
     updated_at AS updatedAt`;
 }
 
-async function getAccountByIdentifier(db: D1Database, id?: string, accountNumber?: string): Promise<AccountRow> {
+async function getAccountByIdentifier(db: D1Database, id?: string, accountNumber?: string, customerName?: string): Promise<AccountRow> {
   const trimmedId = id?.trim();
   const trimmedAccountNumber = accountNumber?.trim();
+  const trimmedCustomerName = customerName?.trim();
 
-  if (!trimmedId && !trimmedAccountNumber) {
-    throw new BankServiceError("ACCOUNT_REQUIRED", "A USD account id or account number is required.");
+  if (!trimmedId && !trimmedAccountNumber && !trimmedCustomerName) {
+    throw new BankServiceError("ACCOUNT_REQUIRED", "A client name or USD account identifier is required.");
   }
 
-  const row = trimmedId
-    ? await db.prepare("SELECT * FROM accounts WHERE id = ? AND status = 'active'").bind(trimmedId).first<AccountRow>()
-    : await db
-        .prepare("SELECT * FROM accounts WHERE account_number = ? AND status = 'active'")
-        .bind(trimmedAccountNumber)
-        .first<AccountRow>();
+  const row = await db
+    .prepare(
+      `SELECT a.*
+      FROM accounts a
+      LEFT JOIN customers c ON c.id = a.customer_id
+      WHERE a.status = 'active'
+        AND (
+          (? IS NOT NULL AND a.id = ?)
+          OR (? IS NOT NULL AND a.account_number = ?)
+          OR (? IS NOT NULL AND (lower(c.display_name) = lower(?) OR lower(c.legal_name) = lower(?)))
+        )
+      ORDER BY a.opened_at DESC
+      LIMIT 1`
+    )
+    .bind(
+      trimmedId ?? null,
+      trimmedId ?? null,
+      trimmedAccountNumber ?? null,
+      trimmedAccountNumber ?? null,
+      trimmedCustomerName ?? null,
+      trimmedCustomerName ?? null,
+      trimmedCustomerName ?? null
+    )
+    .first<AccountRow>();
 
   if (!row) {
     throw new BankServiceError("ACCOUNT_NOT_FOUND", "The requested account was not found.", 404);

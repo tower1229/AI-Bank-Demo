@@ -165,7 +165,7 @@ class LookupFakeD1 {
       bind: (...args: unknown[]) => ({
         first: async () => {
           if (sql.includes("FROM accounts")) {
-            const accountNumber = args[0];
+            const accountNumber = args.find((arg) => typeof arg === "string" && String(arg).startsWith("PB-USD-"));
             return accountNumber === "PB-USD-LOW"
               ? {
                   id: "account-low",

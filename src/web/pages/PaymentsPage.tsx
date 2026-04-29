@@ -1,8 +1,8 @@
 import { FormEvent, useState } from "react";
 import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import type { PaymentInstructionSummary } from "../../bank/service";
-import { SectionHeader, TextInput } from "../components/common";
+import type { CustomerSearchResult, PaymentInstructionSummary } from "../../bank/service";
+import { CustomerTypeahead, SectionHeader, TextInput } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { postJson } from "../lib/api";
 import { formatTime, formatUsd, usdToCents } from "../lib/format";
@@ -66,12 +66,12 @@ export function PaymentsPage({ paymentInstructions }: { paymentInstructions: Pay
   );
 }
 
-export function PaymentInstructionPage({ runAction }: { runAction: RunAction }) {
+export function PaymentInstructionPage({ customers, runAction }: { customers: CustomerSearchResult[]; runAction: RunAction }) {
   const navigate = useNavigate();
   const confirm = useConfirm();
   const [form, setForm] = useState({
-    fromAccountNumber: "PB-USD-1028",
-    toAccountNumber: "PB-USD-4186",
+    fromCustomerName: "Zhang San",
+    toCustomerName: "Li Si",
     amountUsd: "100000",
     memo: "Family office fees"
   });
@@ -81,7 +81,7 @@ export function PaymentInstructionPage({ runAction }: { runAction: RunAction }) 
     const amount = usdToCents(form.amountUsd);
     const isConfirmed = await confirm({
       title: "Confirm Payment Instruction",
-      description: `Execute transfer of ${formatUsd(amount)} from ${form.fromAccountNumber} to ${form.toAccountNumber}?`,
+      description: `Execute transfer of ${formatUsd(amount)} from ${form.fromCustomerName} to ${form.toCustomerName}?`,
       confirmText: "Execute Payment"
     });
 
@@ -90,8 +90,8 @@ export function PaymentInstructionPage({ runAction }: { runAction: RunAction }) 
     const succeeded = await runAction(async () => {
       const response = await postJson<{ displayMessage: string }>("/api/transfers", {
         confirmed: true,
-        fromAccountNumber: form.fromAccountNumber,
-        toAccountNumber: form.toAccountNumber,
+        fromCustomerName: form.fromCustomerName,
+        toCustomerName: form.toCustomerName,
         amountCents: amount,
         currency: "USD",
         memo: form.memo
@@ -106,8 +106,20 @@ export function PaymentInstructionPage({ runAction }: { runAction: RunAction }) 
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <SectionHeader title="Transfer Details" detail="Book an internal USD account-to-account transfer." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
-        <TextInput label="From account number" value={form.fromAccountNumber} onChange={(fromAccountNumber) => setForm({ ...form, fromAccountNumber })} />
-        <TextInput label="To account number" value={form.toAccountNumber} onChange={(toAccountNumber) => setForm({ ...form, toAccountNumber })} />
+        <CustomerTypeahead
+          customers={customers}
+          label="From client"
+          onChange={(fromCustomerName) => setForm({ ...form, fromCustomerName })}
+          onSelect={(customer) => setForm({ ...form, fromCustomerName: customer.name })}
+          value={form.fromCustomerName}
+        />
+        <CustomerTypeahead
+          customers={customers}
+          label="To client"
+          onChange={(toCustomerName) => setForm({ ...form, toCustomerName })}
+          onSelect={(customer) => setForm({ ...form, toCustomerName: customer.name })}
+          value={form.toCustomerName}
+        />
         <TextInput label="Amount USD" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
         <TextInput label="Memo" value={form.memo} onChange={(memo) => setForm({ ...form, memo })} />
         <div className="flex justify-end gap-3 border-t border-gray-100 pt-4">
