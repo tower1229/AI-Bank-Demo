@@ -70,7 +70,7 @@ export default function App() {
             AB
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">AI Bank Demo</p>
+            <p className="text-sm font-semibold text-white">Core Bank System</p>
             <p className="text-xs text-gray-500">Private banking console</p>
           </div>
         </div>

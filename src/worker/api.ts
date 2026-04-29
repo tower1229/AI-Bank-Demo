@@ -13,7 +13,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       return json({
         ok: true,
         data: await getHealth(env.DB),
-        displayMessage: "AI Bank Demo API and D1 are reachable."
+        displayMessage: "Core Bank System API and D1 are reachable."
       });
     }
 
