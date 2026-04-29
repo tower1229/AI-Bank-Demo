@@ -61,13 +61,18 @@ This document defines the visual and structural design guidelines for the AI Ban
 
 ### 4.4 Navigation Tabs (Main Content)
 - **Top Sub-tabs**: Horizontal list, active tab has a bottom border (e.g., `border-b-2 border-violet-600` or orange) or bold text, inactive are muted.
+- **Breadcrumbs and Back Navigation**: The app shell owns breadcrumbs and parent-route back links for every nested route. Create/detail pages must not implement separate duplicate back links inside the page body.
+- **Parent Highlighting**: Sidebar navigation must keep the parent section highlighted for nested routes such as `/client-book/:customerId`, `/payments/new`, and `/investment-orders/new`.
 
 ### 4.5 Page Structure and Routing
-- **List/Queue Pages**: Operational pages such as onboarding queues, payment instructions, product shelves, and audit logs should prioritize existing records in tables or searchable lists. Do not place a create/edit form beside the list on the same route.
+- **List/Queue Pages**: Operational pages such as client books, onboarding queues, payment instructions, product shelves, and audit logs should prioritize existing records in tables or searchable lists. Do not place create/edit forms or detail panels beside the list on the same route.
+- **Workflow Context**: Do not combine unrelated lists merely because a form will eventually need both. For example, Investment Orders should start from a Product Shelf table with a `Book order` action per product; funding account selection belongs inside the order-entry route.
+- **Operational Landing Pages**: A transaction function should land on its operational record list. For example, Payments should show payment/transfer instruction history first; funding account lookup belongs inside the payment creation flow or a separate account selector, not as the primary landing-page content.
+- **Detail Pages**: Record details must open on a dedicated route, usually `<section-route>/<id>`. For example, client portfolio details use `/client-book/:customerId`, not a side-by-side panel next to the client list.
 - **Create/Edit Pages**: New data entry flows must open on a dedicated route, usually `<section-route>/new` for create flows and `<section-route>/<id>/edit` for edits when implemented.
 - **Primary Actions**: List pages should expose one clear primary action in the page header or table toolbar, such as `New application`, `New payment`, or `New order`, linking to the dedicated form route.
 - **Form Width**: Dedicated create/edit pages should use a constrained single-column form container (`max-w-3xl`) with Back, Cancel, and final Submit/Book/Execute actions.
-- **Route Naming**: Use private-banking domain routes and labels. Current standards are `/dashboard`, `/client-lifecycle`, `/client-lifecycle/new`, `/client-book`, `/payments`, `/payments/new`, `/investment-orders`, `/investment-orders/new`, and `/audit-log`.
+- **Route Naming**: Use private-banking domain routes and labels. Current standards are `/dashboard`, `/client-lifecycle`, `/client-lifecycle/new`, `/client-book`, `/client-book/:customerId`, `/payments`, `/payments/new`, `/investment-orders`, `/investment-orders/new`, and `/audit-log`.
 - **Backwards Compatibility**: If route names are changed, keep redirects from old demo routes so shared links continue to work.
 
 ## 5. Development Implementation (Tailwind CSS)

@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { OnboardingApplication } from "../../bank/service";
-import { BackLink, SectionHeader, TextInput } from "../components/common";
+import { SectionHeader, TextInput } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { formatTime, formatUsd, usdToCents } from "../lib/format";
 import { postJson } from "../lib/api";
@@ -146,7 +146,6 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
 
   return (
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <BackLink to="/client-lifecycle" label="Back to onboarding queue" />
       <SectionHeader title="New Client Application" detail="Capture KYC, source-of-funds, and initial funding details." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
         <TextInput label="Customer name" value={form.customerName} onChange={(customerName) => setForm({ ...form, customerName })} />

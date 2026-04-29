@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, ProductDetail } from "../bank/service";
+import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, PaymentInstructionSummary, ProductDetail } from "../bank/service";
 import type { DashboardData, HealthData, SeedStatusData } from "../bank/types";
 
 export type LoadState = "loading" | "ready" | "error";
@@ -12,6 +12,7 @@ export interface AppData {
   applications: OnboardingApplication[];
   customers: CustomerSearchResult[];
   products: ProductDetail[];
+  paymentInstructions: PaymentInstructionSummary[];
   auditLogs: AuditLogEntry[];
 }
 

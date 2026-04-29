@@ -163,6 +163,19 @@ export interface AuditLogEntry {
   createdAt: string;
 }
 
+export interface PaymentInstructionSummary {
+  id: string;
+  status: string;
+  fromAccountNumber: string | null;
+  toAccountNumber: string | null;
+  amountCents: number;
+  currency: Currency;
+  memo: string | null;
+  source: OperationSource;
+  operatorId: string;
+  createdAt: string;
+}
+
 export class BankServiceError extends Error {
   constructor(
     public readonly errorCode: string,
@@ -522,6 +535,33 @@ export async function createTransfer(
   });
 
   return { transactionId, displayMessage };
+}
+
+export async function listPaymentInstructions(db: D1Database, limit = 50): Promise<PaymentInstructionSummary[]> {
+  const result = await db
+    .prepare(
+      `SELECT
+        t.id,
+        t.status,
+        fa.account_number AS fromAccountNumber,
+        ta.account_number AS toAccountNumber,
+        t.amount_cents AS amountCents,
+        t.currency,
+        t.memo,
+        t.source,
+        t.operator_id AS operatorId,
+        t.created_at AS createdAt
+      FROM transactions t
+      LEFT JOIN accounts fa ON fa.id = t.from_account_id
+      LEFT JOIN accounts ta ON ta.id = t.to_account_id
+      WHERE t.transaction_type = 'internal_transfer'
+      ORDER BY t.created_at DESC
+      LIMIT ?`
+    )
+    .bind(Math.min(Math.max(limit, 1), 100))
+    .all<PaymentInstructionSummary>();
+
+  return result.results ?? [];
 }
 
 export async function listProducts(db: D1Database): Promise<ProductDetail[]> {

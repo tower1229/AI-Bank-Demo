@@ -7,6 +7,7 @@ import {
   getOnboardingApplication,
   listAuditLogs,
   listOnboardingApplications,
+  listPaymentInstructions,
   listProducts,
   purchaseProduct,
   searchCustomers,
@@ -146,6 +147,14 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         ok: true,
         data: result,
         displayMessage: result.displayMessage
+      });
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/transfers") {
+      return json({
+        ok: true,
+        data: await listPaymentInstructions(env.DB),
+        displayMessage: "Payment instructions loaded."
       });
     }
 

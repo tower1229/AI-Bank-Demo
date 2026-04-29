@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, ProductDetail } from "../bank/service";
+import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, PaymentInstructionSummary, ProductDetail } from "../bank/service";
 import type { DashboardData, HealthData, SeedStatusData } from "../bank/types";
 import { AppShell } from "./components/AppShell";
 import { fetchJson } from "./lib/api";
-import { getActiveNavigationItem, getPageTitle } from "./navigation";
+import { getActiveNavigationItem, getRouteNavigationMeta } from "./navigation";
 import { AuditPage } from "./pages/AuditPage";
-import { ClientBookPage } from "./pages/ClientBookPage";
+import { ClientBookPage, ClientPortfolioPage } from "./pages/ClientBookPage";
 import { ClientLifecyclePage, NewClientApplicationPage } from "./pages/ClientLifecyclePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InvestmentOrderEntryPage, InvestmentOrdersPage } from "./pages/InvestmentOrdersPage";
@@ -20,6 +20,7 @@ const emptyData: AppData = {
   applications: [],
   customers: [],
   products: [],
+  paymentInstructions: [],
   auditLogs: []
 };
 
@@ -31,21 +32,22 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   const activeItem = getActiveNavigationItem(location.pathname);
-  const pageTitle = getPageTitle(location.pathname, activeItem.name);
+  const routeMeta = getRouteNavigationMeta(location.pathname, activeItem.name);
 
   async function refresh() {
     try {
-      const [health, seed, dashboard, applications, customers, products, auditLogs] = await Promise.all([
+      const [health, seed, dashboard, applications, customers, products, paymentInstructions, auditLogs] = await Promise.all([
         fetchJson<HealthData>("/api/health"),
         fetchJson<SeedStatusData>("/api/seed/status"),
         fetchJson<DashboardData>("/api/dashboard"),
         fetchJson<OnboardingApplication[]>("/api/onboarding/applications"),
         fetchJson<CustomerSearchResult[]>("/api/customers"),
         fetchJson<ProductDetail[]>("/api/products"),
+        fetchJson<PaymentInstructionSummary[]>("/api/transfers"),
         fetchJson<AuditLogEntry[]>("/api/audit-logs")
       ]);
 
-      setData({ health, seed, dashboard, applications, customers, products, auditLogs });
+      setData({ health, seed, dashboard, applications, customers, products, paymentInstructions, auditLogs });
       setState("ready");
       setError(null);
     } catch (loadError) {
@@ -90,7 +92,7 @@ export default function App() {
       error={error}
       healthCheckedAt={data.health?.checkedAt ?? null}
       message={message}
-      pageTitle={pageTitle}
+      routeMeta={routeMeta}
       state={state}
       statusLabel={statusLabel}
     >
@@ -100,9 +102,10 @@ export default function App() {
         <Route path="/client-lifecycle" element={<ClientLifecyclePage applications={data.applications} runAction={runAction} />} />
         <Route path="/client-lifecycle/new" element={<NewClientApplicationPage runAction={runAction} />} />
         <Route path="/client-book" element={<ClientBookPage initialCustomers={data.customers} />} />
-        <Route path="/payments" element={<PaymentsPage customers={data.customers} />} />
+        <Route path="/client-book/:customerId" element={<ClientPortfolioPage />} />
+        <Route path="/payments" element={<PaymentsPage paymentInstructions={data.paymentInstructions} />} />
         <Route path="/payments/new" element={<PaymentInstructionPage runAction={runAction} />} />
-        <Route path="/investment-orders" element={<InvestmentOrdersPage customers={data.customers} products={data.products} />} />
+        <Route path="/investment-orders" element={<InvestmentOrdersPage products={data.products} />} />
         <Route path="/investment-orders/new" element={<InvestmentOrderEntryPage products={data.products} runAction={runAction} />} />
         <Route path="/audit-log" element={<AuditPage auditLogs={data.auditLogs} />} />
         <Route path="/onboarding" element={<Navigate to="/client-lifecycle" replace />} />

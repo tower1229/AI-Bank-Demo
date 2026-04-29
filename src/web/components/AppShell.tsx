@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { ChevronRight, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatTime } from "../lib/format";
+import type { RouteNavigationMeta } from "../navigation";
 import { navigationGroups } from "../navigation";
 import type { LoadState, NavItem } from "../types";
 import { Notice } from "./common";
@@ -12,7 +14,7 @@ export function AppShell({
   error,
   healthCheckedAt,
   message,
-  pageTitle,
+  routeMeta,
   state,
   statusLabel
 }: {
@@ -22,7 +24,7 @@ export function AppShell({
   error: string | null;
   healthCheckedAt: string | null;
   message: string | null;
-  pageTitle: string;
+  routeMeta: RouteNavigationMeta;
   state: LoadState;
   statusLabel: string;
 }) {
@@ -78,11 +80,33 @@ export function AppShell({
       <main className="min-w-0 flex-1 lg:ml-64">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pt-2 pb-0 md:flex-row md:items-end md:justify-between">
-            <div className="flex gap-6 overflow-x-auto">
-              <button className="flex items-center gap-2 border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
-                <ActiveIcon className="h-4 w-4" />
-                {pageTitle}
-              </button>
+            <div className="min-w-0">
+              <nav className="mb-2 flex min-h-5 items-center gap-1 overflow-x-auto text-xs font-medium text-gray-500" aria-label="Breadcrumb">
+                {routeMeta.breadcrumbs.map((crumb, index) => (
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap" key={`${crumb.label}-${index}`}>
+                    {index > 0 ? <ChevronRight className="h-3.5 w-3.5 text-gray-400" /> : null}
+                    {crumb.path ? (
+                      <Link className="hover:text-gray-900" to={crumb.path}>
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      <span className="text-gray-700">{crumb.label}</span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+              {routeMeta.backTo ? (
+                <Link className="mb-2 inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900" to={routeMeta.backTo}>
+                  <ArrowLeft className="h-4 w-4" />
+                  {routeMeta.backLabel ?? "Back"}
+                </Link>
+              ) : null}
+              <div className="flex gap-6 overflow-x-auto">
+                <button className="flex items-center gap-2 border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
+                  <ActiveIcon className="h-4 w-4" />
+                  {routeMeta.title}
+                </button>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 pb-3">
               <span className={statusClass(state)}>

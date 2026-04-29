@@ -1,6 +1,18 @@
 import { LayoutDashboard, PackageOpen, Send, ShieldAlert, UserPlus, Users } from "lucide-react";
 import type { NavItem } from "./types";
 
+export interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
+
+export interface RouteNavigationMeta {
+  backLabel?: string;
+  backTo?: string;
+  breadcrumbs: BreadcrumbItem[];
+  title: string;
+}
+
 export const navigationGroups: { name: string; items: NavItem[] }[] = [
   { name: "Workspace", items: [{ name: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
   {
@@ -24,11 +36,60 @@ export function getActiveNavigationItem(pathname: string): NavItem {
 }
 
 export function getPageTitle(pathname: string, fallback: string): string {
-  const titles: Record<string, string> = {
-    "/client-lifecycle/new": "New Client Application",
-    "/payments/new": "New Payment Instruction",
-    "/investment-orders/new": "New Investment Order"
-  };
+  return getRouteNavigationMeta(pathname, fallback).title;
+}
 
-  return titles[pathname] ?? fallback;
+export function getRouteNavigationMeta(pathname: string, fallback: string): RouteNavigationMeta {
+  if (pathname === "/client-lifecycle/new") {
+    return {
+      backLabel: "Back to Client Lifecycle",
+      backTo: "/client-lifecycle",
+      breadcrumbs: [
+        { label: "Client Lifecycle", path: "/client-lifecycle" },
+        { label: "New Client Application" }
+      ],
+      title: "New Client Application"
+    };
+  }
+
+  if (pathname.startsWith("/client-book/")) {
+    return {
+      backLabel: "Back to Client Book",
+      backTo: "/client-book",
+      breadcrumbs: [
+        { label: "Client Book", path: "/client-book" },
+        { label: "Client 360 Portfolio" }
+      ],
+      title: "Client 360 Portfolio"
+    };
+  }
+
+  if (pathname === "/payments/new") {
+    return {
+      backLabel: "Back to Payments",
+      backTo: "/payments",
+      breadcrumbs: [
+        { label: "Payments", path: "/payments" },
+        { label: "New Payment Instruction" }
+      ],
+      title: "New Payment Instruction"
+    };
+  }
+
+  if (pathname === "/investment-orders/new") {
+    return {
+      backLabel: "Back to Investment Orders",
+      backTo: "/investment-orders",
+      breadcrumbs: [
+        { label: "Investment Orders", path: "/investment-orders" },
+        { label: "New Investment Order" }
+      ],
+      title: "New Investment Order"
+    };
+  }
+
+  return {
+    breadcrumbs: [{ label: fallback }],
+    title: fallback
+  };
 }
