@@ -106,6 +106,16 @@ Expected current behavior:
 - `/api/dashboard` returns non-empty metrics, customers, products, and recent activity.
 - `/mcp` returns the MCP tool list on GET and supports JSON-RPC `initialize`, `tools/list`, and `tools/call` on POST.
 
+Remote Cloudflare commands:
+
+```bash
+npm run db:migrate:remote
+npm run db:seed:remote
+npm run deploy
+```
+
+These scripts load `CLOUDFLARE_API_TOKEN` from local `.env` through the Node wrapper scripts and do not print the token.
+
 ## Vertical Slice Verification
 
 Completed locally:

@@ -12,7 +12,9 @@
     "test": "vitest run --passWithNoTests",
     "db:migrate:local": "wrangler d1 migrations apply ai-bank-demo-db --local",
     "db:seed:local": "wrangler d1 execute ai-bank-demo-db --local --file=./scripts/seed.sql",
-    "deploy": "npm run build:web && wrangler deploy"
+    "db:migrate:remote": "node ./scripts/wrangler-env.mjs d1 migrations apply ai-bank-demo-db --remote",
+    "db:seed:remote": "node ./scripts/wrangler-env.mjs d1 execute ai-bank-demo-db --remote --file=./scripts/seed.sql",
+    "deploy": "node ./scripts/deploy.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
