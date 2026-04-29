@@ -130,8 +130,8 @@ Transfers are internal USD account-to-account transfers only.
 
 Before executing:
 
-1. Resolve the paying customer/account.
-2. Resolve the recipient customer/account.
+1. Resolve the paying customer/account (use `search_customers` to find the account if you only have a name).
+2. Resolve the recipient customer/account (use `search_customers` to find the account if you only have a name).
 3. Confirm amount and memo.
 4. Summarize and ask for confirmation.
 5. Call `create_transfer` only after confirmation.
@@ -161,7 +161,7 @@ If the service returns an error, relay `displayMessage` and do not invent succes
 
 Before purchase:
 
-1. Resolve the customer and funding account.
+1. Resolve the customer and funding account (use `search_customers` if you only have a name).
 2. Resolve the product.
 3. Confirm amount.
 4. Check product risk, minimum subscription, and product terms from tool data.
