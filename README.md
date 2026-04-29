@@ -32,6 +32,21 @@ The web console and MCP tools must reuse the same banking service layer so manua
 
 ## Development State
 
-This repository is currently in planning/setup state. Application code has not been implemented yet.
+This repository has the Phase 1 scaffold implemented: Cloudflare Worker, React/Vite console, D1 migration, seed SQL, and read-only dashboard APIs.
 
 Local secrets belong in `.env` or `.dev.vars`; use `.env.example` as the template and never commit real tokens.
+
+## Local Run
+
+```bash
+npm install
+npm run db:migrate:local
+npm run db:seed:local
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:8787
+```

@@ -95,24 +95,50 @@ openclaw logs --follow
 
 The Telegram bot has already been tested enough to show that OpenClaw receives DM messages and replies with the AI Bank Demo persona. MCP tool connectivity is not yet implemented.
 
-## Expected Commands After Implementation
+## Phase 1 Commands
 
-These scripts do not exist yet. Add them when implementation begins:
+These scripts exist after the Phase 1 scaffold:
 
 ```bash
 npm install
-npm run dev
 npm run typecheck
 npm run test
 npm run build
 npm run db:migrate:local
 npm run db:seed:local
+npm run dev
 npm run deploy
 ```
+
+Recommended local order:
+
+```bash
+npm install
+npm run db:migrate:local
+npm run db:seed:local
+npm run dev
+```
+
+Then open:
+
+```text
+http://localhost:8787
+```
+
+Useful read-only endpoints:
+
+```text
+GET /api/health
+GET /api/seed/status
+GET /api/dashboard
+```
+
+The `/mcp` endpoint is intentionally a Phase 2 placeholder and returns `501`.
 
 ## Working Tree Hygiene
 
 - `.env` was removed from git tracking and is local-only.
 - `.wrangler/` is local Cloudflare state and is ignored.
+- `dist/` and `node_modules/` are generated locally and ignored.
 - Do not commit real tokens or generated local state.
 - Prefer documenting durable decisions in `docs/handoff.md` or the specific design doc instead of leaving them only in chat.

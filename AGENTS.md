@@ -18,6 +18,7 @@ Read these first:
 - `docs/deployment.md`: target Cloudflare and OpenClaw deployment shape.
 - `docs/setup-preparation.md`: Telegram, Cloudflare, and OpenClaw preparation checklist.
 - `docs/development.md`: cross-device development setup.
+- `docs/ui-guidelines.md`: frontend UI design specification and styling rules.
 - `docs/handoff.md`: current progress and next implementation steps.
 
 ## Confirmed Architecture

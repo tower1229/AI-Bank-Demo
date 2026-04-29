@@ -6,7 +6,16 @@ Date: 2026-04-29
 
 The project is an AI Bank Demo for showing Telegram natural language control of a simulated private banking system through OpenClaw and MCP.
 
-The repository currently contains planning and setup documents only. No application code has been implemented yet.
+The repository now contains the Phase 1 engineering scaffold and data layer:
+
+- TypeScript + React/Vite frontend.
+- Cloudflare Worker serving API routes and Vite static assets.
+- D1 migration for the v1 demo entities.
+- Repeatable local seed SQL.
+- Read-only health, seed status, and dashboard APIs.
+- Minimal web console showing seed metrics, clients, products, and recent audit activity.
+
+Full write operations, MCP tools, and manual business forms are not implemented yet.
 
 ## Decisions Already Locked
 
@@ -57,6 +66,30 @@ Interpretation:
 - `ai-bank` routing and prompt behavior are likely correct.
 - Bank MCP connectivity is not yet verified because the MCP service has not been implemented.
 
+The Worker currently reserves `/mcp` and returns `501 MCP_NOT_IMPLEMENTED`.
+
+## Phase 1 Verification
+
+Completed locally:
+
+- `npm install`
+- `npm run typecheck`
+- `npm run build`
+- `npm run test`
+- `npm run db:migrate:local`
+- `npm run db:seed:local`
+- `curl http://localhost:8787/api/health`
+- `curl http://localhost:8787/api/seed/status`
+- `curl http://localhost:8787/api/dashboard`
+- `curl http://localhost:8787/mcp`
+
+Observed seed counts:
+
+- Customers: 3
+- Products: 3
+- Audit logs: 2
+- Pending onboarding applications: 1
+
 ## Important Security Note
 
 Real tokens were pasted during setup review. They should be rotated before any public push or deployment.
@@ -73,25 +106,7 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
 
 ## Recommended Next Implementation Order
 
-1. Scaffold TypeScript project.
-   - `package.json`
-   - `tsconfig.json`
-   - `vite.config.ts`
-   - `wrangler.toml`
-   - `src/worker`
-   - `src/web`
-   - `src/bank`
-
-2. Add D1 schema and migrations.
-   - Customers.
-   - Accounts.
-   - Onboarding applications.
-   - Transactions.
-   - Products.
-   - Holdings.
-   - Audit logs.
-
-3. Implement shared bank service layer.
+1. Implement shared bank service layer.
    - Validation.
    - Onboarding application creation.
    - Onboarding approval.
@@ -101,31 +116,32 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
    - Product purchase.
    - Portfolio query.
 
-4. Implement HTTP API routes.
-   - Web console endpoints.
-   - Health endpoint.
-   - Seed/reset endpoint or CLI script for demo setup.
+2. Implement write HTTP API routes.
+   - Onboarding create/approve.
+   - Customer search and portfolio.
+   - Internal transfer.
+   - Product purchase.
+   - Audit log reads.
 
-5. Implement MCP endpoint.
+3. Implement MCP endpoint.
    - Business-action tools only.
    - Require `BANK_MCP_SECRET`.
    - Return structured data plus `displayMessage`.
 
-6. Implement web console.
-   - Dashboard.
+4. Expand web console.
    - Onboarding create/list/detail/approve.
    - Customer/account/portfolio view.
    - Transfer form.
    - Product purchase form.
    - Audit log.
 
-7. Add validation and smoke tests.
+5. Add validation and smoke tests.
    - Service-layer unit tests.
    - Worker API smoke tests.
    - MCP tool-list and tool-call smoke tests.
    - Frontend build.
 
-8. Deploy and connect OpenClaw MCP.
+6. Deploy and connect OpenClaw MCP.
    - Apply D1 migrations.
    - Seed remote data.
    - Set `BANK_MCP_SECRET`.

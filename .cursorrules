@@ -1,0 +1,14 @@
+# AI Bank Demo Project Rules
+
+You are assisting with the AI Bank Demo project.
+
+## Source of Truth
+
+Read the following files before making architectural or design decisions:
+- `AGENTS.md`: Core project mission, architecture, constraints, and instructions.
+- `docs/ui-guidelines.md`: Frontend UI design specification and styling rules based on our design reference.
+
+## Design Constraints
+- Always adhere strictly to `docs/ui-guidelines.md` for any frontend interface design and component styling.
+- Use Tailwind CSS as the primary styling framework, following the color palette, typography, and component structures defined in the UI guidelines.
+- Do not implement separate business logic for manual web operations and AI-assisted operations.
