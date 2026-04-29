@@ -95,19 +95,7 @@ export function ClientLifecyclePage({
 export function NewClientApplicationPage({ runAction }: { runAction: RunAction }) {
   const navigate = useNavigate();
   const confirm = useConfirm();
-  const [form, setForm] = useState({
-    customerName: "Alice Wong",
-    documentType: "passport",
-    documentNumber: "DEMOA12345",
-    dateOfBirth: "1984-05-18",
-    documentExpiryDate: "2032-05-18",
-    nationality: "Demo Republic",
-    residentialAddress: "18 Marina View, Singapore",
-    occupationTitle: "Family office director",
-    initialDepositUsd: "800000",
-    sourceOfFunds: "Investment income and company dividends",
-    isPep: false
-  });
+  const [form, setForm] = useState(() => generateDemoApplicationProfile());
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -182,4 +170,76 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
       </form>
     </article>
   );
+}
+
+function generateDemoApplicationProfile() {
+  const givenNames = ["Alice", "Maya", "Daniel", "Sophia", "Victor", "Clara", "Ethan", "Nora"];
+  const familyNames = ["Wong", "Chen", "Tan", "Zhao", "Lin", "Hale", "Morgan", "Reed"];
+  const occupations = [
+    "Family office director",
+    "Technology founder",
+    "Real estate investor",
+    "Private equity partner",
+    "Listed company executive",
+    "Commodity trading principal",
+    "Investment holding company owner"
+  ];
+  const sourceOfFunds = [
+    "Investment income and company dividends",
+    "Sale proceeds from privately held business",
+    "Real estate portfolio rental income",
+    "Long-term public equity investment gains",
+    "Family trust distribution and dividends",
+    "Executive compensation and vested shares"
+  ];
+  const addresses = [
+    "18 Marina View, Demo City",
+    "42 Victoria Harbour Road, Demo City",
+    "9 Orchard Crescent, Demo City",
+    "77 Central Avenue, Demo City",
+    "25 Lakefront Drive, Demo City",
+    "63 Meridian Square, Demo City"
+  ];
+  const nationalities = ["Demo Republic", "Arcadia", "Pacifica", "Meridian State", "Northbridge"];
+  const initialDeposits = ["500000", "750000", "800000", "1000000", "1200000", "1500000"];
+
+  const givenName = pick(givenNames);
+  const familyName = pick(familyNames);
+  const birthYear = randomInt(1968, 1993);
+  const birthMonth = randomInt(1, 12);
+  const birthDay = randomInt(1, 28);
+  const expiryYear = randomInt(2031, 2038);
+  const expiryMonth = randomInt(1, 12);
+  const expiryDay = randomInt(1, 28);
+
+  return {
+    customerName: `${givenName} ${familyName}`,
+    documentType: "passport",
+    documentNumber: `DEMO${randomAlpha(2)}${randomInt(100000, 999999)}`,
+    dateOfBirth: formatDate(birthYear, birthMonth, birthDay),
+    documentExpiryDate: formatDate(expiryYear, expiryMonth, expiryDay),
+    nationality: pick(nationalities),
+    residentialAddress: pick(addresses),
+    occupationTitle: pick(occupations),
+    initialDepositUsd: pick(initialDeposits),
+    sourceOfFunds: pick(sourceOfFunds),
+    isPep: Math.random() < 0.15
+  };
+}
+
+function pick<T>(items: T[]): T {
+  return items[randomInt(0, items.length - 1)];
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomAlpha(length: number): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return Array.from({ length }, () => alphabet[randomInt(0, alphabet.length - 1)]).join("");
+}
+
+function formatDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
