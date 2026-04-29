@@ -1,4 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  UserPlus,
+  Users,
+  Send,
+  PackageOpen,
+  ShieldAlert,
+  LucideIcon
+} from "lucide-react";
+import { useConfirm } from "./hooks/useConfirm";
 import type { ApiResponse, DashboardData, HealthData, RiskLevel, SeedStatusData } from "../bank/types";
 import type {
   AuditLogEntry,
@@ -9,7 +20,6 @@ import type {
 } from "../bank/service";
 
 type LoadState = "loading" | "ready" | "error";
-type Tab = "Dashboard" | "Onboarding" | "Customers" | "Transfers" | "Products" | "Audit";
 
 interface AppData {
   health: HealthData | null;
@@ -21,11 +31,21 @@ interface AppData {
   auditLogs: AuditLogEntry[];
 }
 
-const navigationGroups: { name: string; items: Tab[] }[] = [
-  { name: "Overview", items: ["Dashboard"] },
-  { name: "Operations", items: ["Onboarding", "Customers", "Products"] },
-  { name: "Core", items: ["Transfers"] },
-  { name: "Security", items: ["Audit"] }
+interface NavItem {
+  name: string;
+  path: string;
+  icon: LucideIcon;
+}
+
+const navigationGroups: { name: string; items: NavItem[] }[] = [
+  { name: "Overview", items: [{ name: "Dashboard", path: "/", icon: LayoutDashboard }] },
+  { name: "Operations", items: [
+    { name: "Onboarding", path: "/onboarding", icon: UserPlus },
+    { name: "Customers", path: "/customers", icon: Users },
+    { name: "Products", path: "/products", icon: PackageOpen }
+  ] },
+  { name: "Core", items: [{ name: "Transfers", path: "/transfers", icon: Send }] },
+  { name: "Security", items: [{ name: "Audit", path: "/audit", icon: ShieldAlert }] }
 ];
 
 const emptyData: AppData = {
@@ -39,11 +59,15 @@ const emptyData: AppData = {
 };
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("Dashboard");
+  const location = useLocation();
   const [state, setState] = useState<LoadState>("loading");
   const [data, setData] = useState<AppData>(emptyData);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const currentPath = location.pathname;
+  const activeItem = navigationGroups.flatMap(g => g.items).find(i => i.path === currentPath) || navigationGroups[0].items[0];
+  const ActiveIcon = activeItem.icon;
 
   async function refresh() {
     try {
@@ -103,20 +127,24 @@ export default function App() {
                 {group.name}
               </h3>
               <div className="space-y-1">
-                {group.items.map((item) => (
-                  <button
-                    className={`flex w-full min-h-9 items-center rounded-md px-3 text-sm font-medium transition ${
-                      item === activeTab
-                        ? "bg-[#1F1F1F] text-[#FF5A00] border-l-[3px] border-[#FF5A00] pl-[calc(0.75rem-3px)]"
-                        : "text-gray-400 hover:bg-white/5 hover:text-white"
-                    }`}
-                    key={item}
-                    onClick={() => setActiveTab(item)}
-                    type="button"
-                  >
-                    {item}
-                  </button>
-                ))}
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = item.path === currentPath;
+                  return (
+                    <Link
+                      to={item.path}
+                      className={`flex w-full min-h-9 gap-3 items-center rounded-md px-3 text-sm font-medium transition ${
+                        isActive
+                          ? "bg-[#1F1F1F] text-[#FF5A00] border-l-[3px] border-[#FF5A00] pl-[calc(0.75rem-3px)]"
+                          : "text-gray-400 hover:bg-white/5 hover:text-white"
+                      }`}
+                      key={item.name}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -139,8 +167,9 @@ export default function App() {
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <header className="mb-6 flex flex-col gap-4 border-b border-gray-200 pt-2 pb-0 md:flex-row md:items-end md:justify-between">
             <div className="flex gap-6 overflow-x-auto">
-              <button className="border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
-                {activeTab}
+              <button className="flex items-center gap-2 border-b-2 border-violet-600 px-1 pb-3 text-sm font-semibold text-gray-900">
+                <ActiveIcon className="h-4 w-4" />
+                {activeItem.name}
               </button>
             </div>
             <div className="flex flex-wrap items-center gap-3 pb-3">
@@ -157,14 +186,15 @@ export default function App() {
           {message ? <Notice tone="success" text={message} /> : null}
           {error ? <Notice tone="error" text={error} /> : null}
 
-          {activeTab === "Dashboard" ? <DashboardView data={data} /> : null}
-          {activeTab === "Onboarding" ? <OnboardingView applications={data.applications} runAction={runAction} /> : null}
-          {activeTab === "Customers" ? <CustomersView initialCustomers={data.customers} /> : null}
-          {activeTab === "Transfers" ? <TransfersView customers={data.customers} runAction={runAction} /> : null}
-          {activeTab === "Products" ? (
-            <ProductsView customers={data.customers} products={data.products} runAction={runAction} />
-          ) : null}
-          {activeTab === "Audit" ? <AuditView auditLogs={data.auditLogs} /> : null}
+          <Routes>
+            <Route path="/" element={<DashboardView data={data} />} />
+            <Route path="/onboarding" element={<OnboardingView applications={data.applications} runAction={runAction} />} />
+            <Route path="/customers" element={<CustomersView initialCustomers={data.customers} />} />
+            <Route path="/transfers" element={<TransfersView customers={data.customers} runAction={runAction} />} />
+            <Route path="/products" element={<ProductsView customers={data.customers} products={data.products} runAction={runAction} />} />
+            <Route path="/audit" element={<AuditView auditLogs={data.auditLogs} />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
       </main>
     </div>
@@ -253,12 +283,19 @@ function OnboardingView({
     isPep: false
   });
 
+  const confirm = useConfirm();
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const amount = usdToCents(form.initialDepositUsd);
-    if (!window.confirm(`Submit onboarding application for ${form.customerName} with ${formatUsd(amount)} initial deposit?`)) {
-      return;
-    }
+    
+    const isConfirmed = await confirm({
+      title: "Confirm Application",
+      description: `Submit onboarding application for ${form.customerName} with ${formatUsd(amount)} initial deposit?`,
+      confirmText: "Submit Application"
+    });
+    
+    if (!isConfirmed) return;
 
     await runAction(async () => {
       const response = await postJson<OnboardingApplication>("/api/onboarding/applications", {
@@ -283,9 +320,13 @@ function OnboardingView({
   }
 
   async function approve(application: OnboardingApplication) {
-    if (!window.confirm(`Approve onboarding application for ${application.customerName}?`)) {
-      return;
-    }
+    const isConfirmed = await confirm({
+      title: "Approve Application",
+      description: `Are you sure you want to approve the onboarding application for ${application.customerName}?`,
+      confirmText: "Approve",
+    });
+
+    if (!isConfirmed) return;
 
     await runAction(async () => {
       const response = await postJson<OnboardingApplication>(`/api/onboarding/applications/${application.id}/approve`, {
@@ -503,12 +544,19 @@ function TransfersView({
     memo: "Family office fees"
   });
 
+  const confirm = useConfirm();
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const amount = usdToCents(form.amountUsd);
-    if (!window.confirm(`Execute transfer of ${formatUsd(amount)} from ${form.fromAccountNumber} to ${form.toAccountNumber}?`)) {
-      return;
-    }
+    
+    const isConfirmed = await confirm({
+      title: "Confirm Transfer",
+      description: `Execute transfer of ${formatUsd(amount)} from ${form.fromAccountNumber} to ${form.toAccountNumber}?`,
+      confirmText: "Execute Transfer"
+    });
+
+    if (!isConfirmed) return;
 
     await runAction(async () => {
       const response = await postJson<{ displayMessage: string }>("/api/transfers", {
@@ -565,13 +613,20 @@ function ProductsView({
 
   const selectedProduct = products.find((product) => product.id === form.productId);
 
+  const confirm = useConfirm();
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     const amount = usdToCents(form.amountUsd);
     const productName = selectedProduct?.name ?? form.productId;
-    if (!window.confirm(`Purchase ${formatUsd(amount)} of ${productName} from ${form.accountNumber}?`)) {
-      return;
-    }
+    
+    const isConfirmed = await confirm({
+      title: "Confirm Purchase",
+      description: `Purchase ${formatUsd(amount)} of ${productName} from ${form.accountNumber}?`,
+      confirmText: "Purchase Product"
+    });
+
+    if (!isConfirmed) return;
 
     await runAction(async () => {
       const response = await postJson<{ displayMessage: string }>("/api/product-purchases", {

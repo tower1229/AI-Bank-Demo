@@ -15,8 +15,13 @@
     "deploy": "npm run build:web && wrangler deploy"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.10",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.14.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.14.2",
+    "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20251011.0",
