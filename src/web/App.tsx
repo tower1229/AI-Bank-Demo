@@ -38,14 +38,14 @@ interface NavItem {
 }
 
 const navigationGroups: { name: string; items: NavItem[] }[] = [
-  { name: "Overview", items: [{ name: "Dashboard", path: "/", icon: LayoutDashboard }] },
-  { name: "Operations", items: [
-    { name: "Onboarding", path: "/onboarding", icon: UserPlus },
-    { name: "Customers", path: "/customers", icon: Users },
-    { name: "Products", path: "/products", icon: PackageOpen }
+  { name: "Workspace", items: [{ name: "Dashboard", path: "/dashboard", icon: LayoutDashboard }] },
+  { name: "Front Office", items: [
+    { name: "Client Lifecycle", path: "/client-lifecycle", icon: UserPlus },
+    { name: "Client Book", path: "/client-book", icon: Users },
+    { name: "Investment Orders", path: "/investment-orders", icon: PackageOpen }
   ] },
-  { name: "Core", items: [{ name: "Transfers", path: "/transfers", icon: Send }] },
-  { name: "Security", items: [{ name: "Audit", path: "/audit", icon: ShieldAlert }] }
+  { name: "Operations", items: [{ name: "Payments", path: "/payments", icon: Send }] },
+  { name: "Controls", items: [{ name: "Audit & Controls", path: "/audit-log", icon: ShieldAlert }] }
 ];
 
 const emptyData: AppData = {
@@ -156,8 +156,8 @@ export default function App() {
               AB
             </div>
             <div>
-              <p className="text-sm font-bold text-white tracking-wide">AI Bank Demo</p>
-              <p className="text-xs text-gray-500">Private banking console</p>
+              <p className="text-sm font-bold text-white tracking-wide">Core Bank System</p>
+              <p className="text-xs text-gray-500">RM operations console</p>
             </div>
           </div>
         </div>
@@ -187,13 +187,19 @@ export default function App() {
           {error ? <Notice tone="error" text={error} /> : null}
 
           <Routes>
-            <Route path="/" element={<DashboardView data={data} />} />
-            <Route path="/onboarding" element={<OnboardingView applications={data.applications} runAction={runAction} />} />
-            <Route path="/customers" element={<CustomersView initialCustomers={data.customers} />} />
-            <Route path="/transfers" element={<TransfersView customers={data.customers} runAction={runAction} />} />
-            <Route path="/products" element={<ProductsView customers={data.customers} products={data.products} runAction={runAction} />} />
-            <Route path="/audit" element={<AuditView auditLogs={data.auditLogs} />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardView data={data} />} />
+            <Route path="/client-lifecycle" element={<OnboardingView applications={data.applications} runAction={runAction} />} />
+            <Route path="/client-book" element={<CustomersView initialCustomers={data.customers} />} />
+            <Route path="/payments" element={<TransfersView customers={data.customers} runAction={runAction} />} />
+            <Route path="/investment-orders" element={<ProductsView customers={data.customers} products={data.products} runAction={runAction} />} />
+            <Route path="/audit-log" element={<AuditView auditLogs={data.auditLogs} />} />
+            <Route path="/onboarding" element={<Navigate to="/client-lifecycle" replace />} />
+            <Route path="/customers" element={<Navigate to="/client-book" replace />} />
+            <Route path="/transfers" element={<Navigate to="/payments" replace />} />
+            <Route path="/products" element={<Navigate to="/investment-orders" replace />} />
+            <Route path="/audit" element={<Navigate to="/audit-log" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </div>
       </main>
@@ -216,12 +222,12 @@ function DashboardView({ data }: { data: AppData }) {
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
         <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm xl:row-span-2">
-          <SectionHeader title="Client Book" detail="Seed clients used for transfer and product-purchase demos." />
+          <SectionHeader title="Relationship Manager Client Book" detail="Active private banking relationships and cash accounts." />
           <CustomerTable customers={data.dashboard?.customers ?? []} />
         </article>
 
         <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <SectionHeader title="Investment Products" detail="Available to manual and MCP purchase flows." />
+          <SectionHeader title="Product Shelf" detail="Approved investment products available for client orders." />
           <div className="mt-5 space-y-3">
             {(data.dashboard?.products ?? []).map((product) => (
               <div className="rounded-lg border border-gray-200 bg-white p-4 transition hover:bg-gray-50" key={product.id}>
@@ -242,7 +248,7 @@ function DashboardView({ data }: { data: AppData }) {
         </article>
 
         <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <SectionHeader title="Recent Activity" detail="Audit events from seed data and live operations." />
+          <SectionHeader title="Recent Operational Activity" detail="Latest audit trail entries across manual and AI-assisted channels." />
           <div className="mt-5 space-y-3">
             {(data.dashboard?.recentActivity ?? []).map((activity) => (
               <div className="rounded-lg border border-gray-100 bg-gray-50 p-4" key={activity.id}>
@@ -290,7 +296,7 @@ function OnboardingView({
     const amount = usdToCents(form.initialDepositUsd);
     
     const isConfirmed = await confirm({
-      title: "Confirm Application",
+      title: "Confirm Client Lifecycle Submission",
       description: `Submit onboarding application for ${form.customerName} with ${formatUsd(amount)} initial deposit?`,
       confirmText: "Submit Application"
     });
@@ -321,7 +327,7 @@ function OnboardingView({
 
   async function approve(application: OnboardingApplication) {
     const isConfirmed = await confirm({
-      title: "Approve Application",
+      title: "Approve Client Onboarding",
       description: `Are you sure you want to approve the onboarding application for ${application.customerName}?`,
       confirmText: "Approve",
     });
@@ -339,7 +345,7 @@ function OnboardingView({
   return (
     <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Create Application" detail="Manual web submission uses the same service as MCP." />
+        <SectionHeader title="New Client Application" detail="Capture KYC, source-of-funds, and initial funding details." />
         <form className="mt-5 grid gap-4" onSubmit={submit}>
           <TextInput label="Customer name" value={form.customerName} onChange={(customerName) => setForm({ ...form, customerName })} />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -371,7 +377,7 @@ function OnboardingView({
       </article>
 
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Applications" detail="Pending applications can only be approved in this console." />
+        <SectionHeader title="Onboarding Queue" detail="Review pending applications and complete bank-side approval." />
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-[760px] w-full border-collapse">
             <thead>
@@ -379,7 +385,7 @@ function OnboardingView({
                 <th className="px-3 py-3 text-left w-8">
                   <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
                 </th>
-                {["Client", "Status", "Initial deposit", "Review", "Created", ""].map((heading) => (
+                {["Prospect", "Lifecycle status", "Initial funding", "Review level", "Created", ""].map((heading) => (
                   <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                     {heading}
                   </th>
@@ -454,7 +460,7 @@ function CustomersView({ initialCustomers }: { initialCustomers: CustomerSearchR
   return (
     <section className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Customer Search" detail="Search by customer name or account number." />
+        <SectionHeader title="Client Book Search" detail="Search by client name or private banking account number." />
         <form className="mt-5 flex gap-3" onSubmit={search}>
           <input
             className="min-h-10 flex-1 rounded-md border border-gray-300 px-3 text-sm"
@@ -489,7 +495,7 @@ function CustomersView({ initialCustomers }: { initialCustomers: CustomerSearchR
       </article>
 
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Portfolio" detail="Accounts, holdings, and recent transactions." />
+        <SectionHeader title="Client 360 Portfolio" detail="Accounts, holdings, and recent account activity." />
         {portfolio ? (
           <div className="mt-5 space-y-5">
             <div>
@@ -551,9 +557,9 @@ function TransfersView({
     const amount = usdToCents(form.amountUsd);
     
     const isConfirmed = await confirm({
-      title: "Confirm Transfer",
+      title: "Confirm Payment Instruction",
       description: `Execute transfer of ${formatUsd(amount)} from ${form.fromAccountNumber} to ${form.toAccountNumber}?`,
-      confirmText: "Execute Transfer"
+      confirmText: "Execute Payment"
     });
 
     if (!isConfirmed) return;
@@ -574,7 +580,7 @@ function TransfersView({
   return (
     <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="New Transfer" detail="Internal USD account-to-account only." />
+        <SectionHeader title="Payment Instruction" detail="Book an internal USD account-to-account transfer." />
         <form className="mt-5 grid gap-4" onSubmit={submit}>
           <TextInput label="From account number" value={form.fromAccountNumber} onChange={(fromAccountNumber) => setForm({ ...form, fromAccountNumber })} />
           <TextInput label="To account number" value={form.toAccountNumber} onChange={(toAccountNumber) => setForm({ ...form, toAccountNumber })} />
@@ -586,7 +592,7 @@ function TransfersView({
         </form>
       </article>
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Available Accounts" detail="Use these account numbers for manual transfers." />
+        <SectionHeader title="Funding Accounts" detail="Available private banking USD accounts for payment entry." />
         <div className="mt-5">
           <CustomerSearchTable customers={customers} />
         </div>
@@ -621,9 +627,9 @@ function ProductsView({
     const productName = selectedProduct?.name ?? form.productId;
     
     const isConfirmed = await confirm({
-      title: "Confirm Purchase",
+      title: "Confirm Investment Order",
       description: `Purchase ${formatUsd(amount)} of ${productName} from ${form.accountNumber}?`,
-      confirmText: "Purchase Product"
+      confirmText: "Book Order"
     });
 
     if (!isConfirmed) return;
@@ -644,11 +650,11 @@ function ProductsView({
   return (
     <section className="grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Purchase Product" detail="Manual purchase uses the shared bank service." />
+        <SectionHeader title="Investment Order Entry" detail="Create a product subscription using the shared bank service." />
         <form className="mt-5 grid gap-4" onSubmit={submit}>
           <TextInput label="Funding account number" value={form.accountNumber} onChange={(accountNumber) => setForm({ ...form, accountNumber })} />
           <label className="grid gap-1 text-sm font-medium text-gray-700">
-            Product
+            Product shelf item
             <select
               className="min-h-10 rounded-md border border-gray-300 px-3 text-sm"
               onChange={(event) => setForm({ ...form, productId: event.target.value })}
@@ -661,7 +667,7 @@ function ProductsView({
               ))}
             </select>
           </label>
-          <TextInput label="Amount USD" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
+          <TextInput label="Subscription amount USD" value={form.amountUsd} onChange={(amountUsd) => setForm({ ...form, amountUsd })} />
           <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
             <input
               checked={form.riskMismatchAcknowledged}
@@ -669,15 +675,15 @@ function ProductsView({
               onChange={(event) => setForm({ ...form, riskMismatchAcknowledged: event.target.checked })}
               type="checkbox"
             />
-            Risk mismatch acknowledged
+            Suitability risk mismatch acknowledged
           </label>
           <button className="min-h-10 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700" type="submit">
-            Purchase product
+            Book investment order
           </button>
         </form>
       </article>
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-        <SectionHeader title="Products and Accounts" detail="Review minimums, risk levels, and funding accounts." />
+        <SectionHeader title="Product Shelf and Funding Accounts" detail="Review minimum subscription, risk level, and available cash accounts." />
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
           <div className="space-y-3">
             {products.map((product) => (
@@ -700,7 +706,7 @@ function ProductsView({
 function AuditView({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Audit Log" detail="Manual web and Telegram/OpenClaw operations appear together." />
+      <SectionHeader title="Audit Trail and Controls" detail="Manual web and Telegram/OpenClaw operations appear in one operational control log." />
       <div className="mt-5 overflow-x-auto">
         <table className="min-w-[880px] w-full border-collapse">
           <thead>
@@ -708,7 +714,7 @@ function AuditView({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
               <th className="px-3 py-3 text-left w-8">
                 <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
               </th>
-              {["Action", "Source", "Operator", "Entity", "Result", "Time"].map((heading) => (
+              {["Event", "Channel", "Operator", "Entity", "Result", "Timestamp"].map((heading) => (
                 <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                   {heading}
                 </th>
