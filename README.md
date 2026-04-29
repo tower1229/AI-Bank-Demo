@@ -10,6 +10,7 @@ The confirmed v1 direction is documented before implementation:
 - [OpenClaw agent instructions](docs/openclaw-agent-instructions.md)
 - [Demo script](docs/demo-script.md)
 - [Deployment notes](docs/deployment.md)
+- [Setup preparation checklist](docs/setup-preparation.md)
 
 ## Architecture
 
