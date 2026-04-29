@@ -157,7 +157,10 @@
                     "allowFrom": [
                         "*"
                     ],
-                    "groupPolicy": "disabled"
+                    "groupPolicy": "disabled",
+                    "streaming": {
+                        "mode": "partial"
+                    }
                 }
             }
         },
@@ -246,6 +249,9 @@
             },
             "stella-timeline-plugin": {
                 "enabled": true,
+                "agents": [
+                    "stella"
+                ],
                 "config": {
                     "enableTrace": true,
                     "enablePromptTimelineContext": true,
