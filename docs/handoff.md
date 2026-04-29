@@ -15,6 +15,8 @@ The repository now contains the Phase 1 engineering scaffold and data layer:
 - Read-only health, seed status, and dashboard APIs.
 - Minimal web console showing seed metrics, clients, products, and recent audit activity.
 
+The browser-facing system name is now `Core Bank System`. The broader project/docs may still refer to `AI Bank Demo` as the overall demo initiative.
+
 Full write operations, MCP tools, and manual business forms are not implemented yet.
 
 ## Decisions Already Locked
@@ -67,6 +69,39 @@ Interpretation:
 - Bank MCP connectivity is not yet verified because the MCP service has not been implemented.
 
 The Worker currently reserves `/mcp` and returns `501 MCP_NOT_IMPLEMENTED`.
+
+## Cross-Device Resume
+
+On a fresh checkout, restore local dependencies and local D1 state:
+
+```bash
+npm install
+npm run db:migrate:local
+npm run db:seed:local
+npm run dev
+```
+
+Open the web console:
+
+```text
+http://localhost:8787
+```
+
+Quick checks:
+
+```bash
+curl http://localhost:8787/api/health
+curl http://localhost:8787/api/seed/status
+curl http://localhost:8787/api/dashboard
+curl http://localhost:8787/mcp
+```
+
+Expected current behavior:
+
+- `/api/health` returns ok and says `Core Bank System API and D1 are reachable.`
+- `/api/seed/status` reports seeded data.
+- `/api/dashboard` returns non-empty metrics, customers, products, and recent activity.
+- `/mcp` returns `501 MCP_NOT_IMPLEMENTED`.
 
 ## Phase 1 Verification
 
