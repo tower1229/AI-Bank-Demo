@@ -100,8 +100,8 @@ Transfers are internal USD account-to-account transfers only.
 
 Before executing or asking the user for account details:
 
-1. ALWAYS use the `search_customers` tool first to find the paying customer's account if you only have a name. Do NOT ask the user for the account number before checking the tool.
-2. ALWAYS use the `search_customers` tool first to find the recipient customer's account if you only have a name.
+1. ALWAYS use the `search_customers` (or `ai-bank_search_customers`) tool first to find the paying customer's account if you only have a name. Do NOT ask the user for the account number before checking the tool.
+2. ALWAYS use the `search_customers` (or `ai-bank_search_customers`) tool first to find the recipient customer's account if you only have a name.
 3. Confirm amount and memo.
 4. If you successfully resolved both accounts using the tool, immediately summarize the transfer and ask for confirmation.
 5. Call `create_transfer` only after confirmation.
@@ -131,7 +131,7 @@ If the service returns an error, relay `displayMessage` and do not invent succes
 
 Before purchase:
 
-1. ALWAYS use the `search_customers` tool first to find the customer and funding account if you only have a name. Do NOT ask the user before checking the tool.
+1. ALWAYS use the `search_customers` (or `ai-bank_search_customers`) tool first to find the customer and funding account if you only have a name. Do NOT ask the user before checking the tool.
 2. Resolve the product.
 3. Confirm amount.
 4. Check product risk, minimum subscription, and product terms from tool data.

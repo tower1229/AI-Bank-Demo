@@ -15,7 +15,7 @@ Prefer asking for the smallest missing set of information. Do not ask the user t
 When a request is ambiguous, ask a targeted clarification. Examples:
 
 - Multiple customers have the same name.
-- The paying or recipient account is still unclear AFTER using the `search_customers` tool (e.g., the customer has multiple accounts).
+- The paying or recipient account is still unclear AFTER using the `search_customers` (or `ai-bank_search_customers`) tool (e.g., the customer has multiple accounts).
 - The amount or product is missing.
 - A write operation has not been confirmed.
 

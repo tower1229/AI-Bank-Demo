@@ -71,7 +71,12 @@
             {
                 "id": "ai-bank",
                 "name": "AI Bank Demo",
-                "workspace": "/root/.openclaw/workspace-ai-bank"
+                "workspace": "/root/.openclaw/workspace-ai-bank",
+                "tools": {
+                    "allow": [
+                        "*"
+                    ]
+                }
             }
         ]
     },
@@ -248,10 +253,7 @@
                 "enabled": false
             },
             "stella-timeline-plugin": {
-                "enabled": true,
-                "agents": [
-                    "stella"
-                ],
+                "enabled": false,
                 "config": {
                     "enableTrace": true,
                     "enablePromptTimelineContext": true,
@@ -352,6 +354,7 @@
         "servers": {
             "ai-bank": {
                 "url": "https://ai-bank-demo.refined-x.workers.dev/mcp",
+                "transport": "streamable-http",
                 "connectionTimeout": 10000
             }
         }
