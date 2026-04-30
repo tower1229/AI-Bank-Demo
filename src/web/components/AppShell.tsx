@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from "react";
-import { ChevronRight, RotateCcw, Settings } from "lucide-react";
+import { ArrowLeft, ChevronRight, RotateCcw, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import type { RouteNavigationMeta } from "../navigation";
@@ -140,9 +140,15 @@ export function AppShell({
                 ))}
               </nav>
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm">
-                  <ActiveIcon className="h-4 w-4" />
-                </span>
+                {routeMeta.backTo ? (
+                  <Link className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:bg-gray-50" to={routeMeta.backTo} aria-label={routeMeta.backLabel ?? "Go back"}>
+                    <ArrowLeft className="h-4 w-4" />
+                  </Link>
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 shadow-sm">
+                    <ActiveIcon className="h-4 w-4" />
+                  </span>
+                )}
                 <div className="min-w-0">
                   <h1 className="truncate text-xl font-semibold tracking-normal text-gray-950">{routeMeta.title}</h1>
                 </div>

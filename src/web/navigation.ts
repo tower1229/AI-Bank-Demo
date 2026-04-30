@@ -100,6 +100,18 @@ export function getRouteNavigationMeta(pathname: string, fallback: string): Rout
     };
   }
 
+  if (pathname.startsWith("/investment-orders/")) {
+    return {
+      backLabel: "Back to Investment Orders",
+      backTo: "/investment-orders",
+      breadcrumbs: [
+        { label: "Investment Orders", path: "/investment-orders" },
+        { label: "Product Details" }
+      ],
+      title: "Product Details"
+    };
+  }
+
   return {
     breadcrumbs: [{ label: fallback }],
     title: fallback
