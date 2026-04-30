@@ -294,7 +294,7 @@ export async function createOnboardingApplication(
         submitted_by, original_user_text, structured_params_json, confirmation_text,
         approved_by, approved_at, created_customer_id, created_account_id,
         created_at, updated_at
-      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
+      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
     )
     .bind(
       id,

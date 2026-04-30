@@ -5,7 +5,7 @@ import { formatTime } from "../lib/format";
 import type { RouteNavigationMeta } from "../navigation";
 import { navigationGroups } from "../navigation";
 import type { LoadState, NavItem } from "../types";
-import { Notice } from "./common";
+import { Notice, statusTone, toneClass } from "./common";
 
 export function AppShell({
   activeItem,
@@ -126,12 +126,12 @@ export function AppShell({
 
 function statusClass(state: LoadState): string {
   if (state === "ready") {
-    return "inline-flex min-h-9 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800";
+    return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("seeded"), "shell")}`;
   }
 
   if (state === "error") {
-    return "inline-flex min-h-9 items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-3 text-sm font-semibold text-orange-700";
+    return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("error"), "shell")}`;
   }
 
-  return "inline-flex min-h-9 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-600";
+  return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("loading"), "shell")}`;
 }

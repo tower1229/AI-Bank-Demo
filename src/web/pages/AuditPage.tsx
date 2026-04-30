@@ -1,5 +1,5 @@
 import type { AuditLogEntry } from "../../bank/service";
-import { SectionHeader } from "../components/common";
+import { SectionHeader, StatusBadge } from "../components/common";
 import { formatTime } from "../lib/format";
 
 export function AuditPage({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
@@ -13,7 +13,7 @@ export function AuditPage({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
               <th className="px-3 py-3 text-left w-8">
                 <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
               </th>
-              {["Event", "Channel", "Operator", "Entity", "Result", "Timestamp"].map((heading) => (
+              {["Event", "Status", "Channel", "Operator", "Entity", "Result", "Timestamp"].map((heading) => (
                 <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-normal text-gray-500" key={heading}>
                   {heading}
                 </th>
@@ -27,7 +27,12 @@ export function AuditPage({ auditLogs }: { auditLogs: AuditLogEntry[] }) {
                   <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
                 </td>
                 <td className="px-3 py-4 text-sm font-medium text-gray-900">{log.action.replaceAll("_", " ")}</td>
-                <td className="px-3 py-4 text-sm text-gray-600">{log.source.replaceAll("_", " ")}</td>
+                <td className="px-3 py-4">
+                  <StatusBadge value={log.status} />
+                </td>
+                <td className="px-3 py-4">
+                  <StatusBadge value={log.source} />
+                </td>
                 <td className="px-3 py-4 text-sm text-gray-600">{log.operatorDisplayName ?? log.operatorId}</td>
                 <td className="px-3 py-4 text-sm text-gray-600">{log.entityType ?? "-"}</td>
                 <td className="px-3 py-4 text-sm text-gray-500">{log.resultMessage}</td>

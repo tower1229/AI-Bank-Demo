@@ -2,7 +2,7 @@ import { FormEvent, useState } from "react";
 import { Plus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import type { CustomerSearchResult, PaymentInstructionSummary } from "../../bank/service";
-import { CustomerTypeahead, SectionHeader, TextInput } from "../components/common";
+import { CustomerTypeahead, SectionHeader, StatusBadge, TextInput } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { postJson } from "../lib/api";
 import { formatTime, formatUsd, usdToCents } from "../lib/format";
@@ -50,9 +50,7 @@ export function PaymentsPage({ paymentInstructions }: { paymentInstructions: Pay
                   <td className="px-4 py-4 text-sm text-gray-600">{payment.toAccountNumber ?? "-"}</td>
                   <td className="px-4 py-4 text-sm font-semibold text-gray-900">{formatUsd(payment.amountCents)}</td>
                   <td className="px-4 py-4">
-                    <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium uppercase text-emerald-800">
-                      {payment.status}
-                    </span>
+                    <StatusBadge value={payment.status} />
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">{payment.source.replaceAll("_", " ")}</td>
                   <td className="px-4 py-4 text-sm text-gray-500">{formatTime(payment.createdAt)}</td>

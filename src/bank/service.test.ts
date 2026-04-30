@@ -174,6 +174,7 @@ class OnboardingFakeD1 {
       bind: (...args: unknown[]) => ({
         run: async () => {
           if (sql.includes("INSERT INTO onboarding_applications")) {
+            expectInsertColumnValueCountToMatch(sql);
             this.application = {
               id: args[0],
               status: "pending_approval",
@@ -219,6 +220,16 @@ class OnboardingFakeD1 {
       })
     };
   }
+}
+
+function expectInsertColumnValueCountToMatch(sql: string) {
+  const match = sql.match(/INSERT INTO onboarding_applications \(([\s\S]+?)\)\s+VALUES \(([\s\S]+?)\)/);
+  expect(match).not.toBeNull();
+
+  const columns = match?.[1].split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+  const values = match?.[2].split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+
+  expect(values).toHaveLength(columns.length);
 }
 
 class LookupFakeD1 {

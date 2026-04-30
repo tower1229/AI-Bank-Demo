@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { CustomerPortfolio, CustomerSearchResult } from "../../bank/service";
-import { CustomerTypeahead, MiniTable, RiskBadge, SectionHeader } from "../components/common";
+import { CustomerTypeahead, MiniTable, Notice, RiskBadge, SectionHeader, StatusBadge } from "../components/common";
 import { fetchJson } from "../lib/api";
 import { formatTime, formatUsd } from "../lib/format";
 
@@ -45,7 +45,7 @@ export function ClientBookPage({ initialCustomers }: { initialCustomers: Custome
           Search
         </button>
       </form>
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      {error ? <Notice tone="error" text={error} /> : null}
       <div className="mt-5 overflow-x-auto">
         <table className="min-w-[760px] w-full border-collapse">
           <thead>
@@ -124,16 +124,18 @@ export function ClientPortfolioPage() {
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <SectionHeader title="Client 360 Portfolio" detail="Accounts, holdings, and recent account activity." />
-      {error ? <p className="mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</p> : null}
+      {error ? <Notice tone="error" text={error} /> : null}
       {portfolio ? (
         <div className="mt-5 space-y-5">
           <div>
             <h3 className="text-base font-semibold text-gray-900">{portfolio.customer.name}</h3>
-            <p className="mt-1 text-sm text-gray-500">Risk profile: {portfolio.customer.riskProfile}</p>
+            <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+              Risk profile: <RiskBadge risk={portfolio.customer.riskProfile} />
+            </div>
           </div>
           <MiniTable
             columns={["Account", "Status", "Balance"]}
-            rows={portfolio.accounts.map((account) => [account.accountNumber, account.status, formatUsd(account.balanceCents)])}
+            rows={portfolio.accounts.map((account) => [account.accountNumber, <StatusBadge value={account.status} />, formatUsd(account.balanceCents)])}
           />
           <MiniTable
             columns={["Holding", "Risk", "Value"]}

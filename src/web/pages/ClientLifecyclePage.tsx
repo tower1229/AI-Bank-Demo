@@ -1,8 +1,8 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, type ReactNode, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Plus, XCircle } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import type { KycCheckStatus, OnboardingApplication } from "../../bank/service";
-import { SectionHeader, TextInput } from "../components/common";
+import { formatStatusLabel, Notice, SectionHeader, StatusBadge, TextInput, statusTone, toneClass } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { formatTime, formatUsd, usdToCents } from "../lib/format";
 import { fetchJson, postJson } from "../lib/api";
@@ -50,12 +50,12 @@ export function ClientLifecyclePage({
                   </Link>
                 </td>
                 <td className="px-3 py-4">
-                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 capitalize">
-                    {application.status.replaceAll("_", " ")}
-                  </span>
+                  <StatusBadge value={application.status} />
                 </td>
                 <td className="px-3 py-4 text-sm font-semibold text-gray-900">{formatUsd(application.initialDepositCents)}</td>
-                <td className="px-3 py-4 text-sm text-gray-600">{formatReview(application.kycStatus ?? application.initialReview)}</td>
+                <td className="px-3 py-4">
+                  <StatusBadge value={application.kycStatus ?? application.initialReview} />
+                </td>
                 <td className="px-3 py-4 text-sm text-gray-500">{formatTime(application.createdAt)}</td>
                 <td className="px-3 py-4 text-right">
                   <Link className="text-sm font-semibold text-violet-700 hover:text-violet-900" to={`/client-lifecycle/${application.id}`}>
@@ -140,7 +140,7 @@ export function OnboardingApplicationDetailPage({
   }
 
   if (error) {
-    return <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</p>;
+    return <Notice tone="error" text={error} />;
   }
 
   if (!application) {
@@ -163,8 +163,8 @@ export function OnboardingApplicationDetailPage({
           ) : null}
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <SummaryTile label="Lifecycle status" value={formatReview(application.status)} />
-          <SummaryTile label="Simulated KYC" value={formatReview(application.kycStatus)} />
+          <SummaryTile label="Lifecycle status" value={<StatusBadge value={application.status} />} />
+          <SummaryTile label="Simulated KYC" value={<StatusBadge value={application.kycStatus} />} />
           <SummaryTile label="Initial funding" value={formatUsd(application.initialDepositCents)} />
         </div>
       </article>
@@ -174,7 +174,7 @@ export function OnboardingApplicationDetailPage({
           <SectionHeader title="Applicant Profile" detail="Structured data submitted from manual web entry or Telegram/OpenClaw intake." />
           <DetailGrid
             rows={[
-              ["Document capture", formatReview(application.documentCaptureMethod)],
+              ["Document capture", formatStatusLabel(application.documentCaptureMethod)],
               ["Document type", application.documentType ?? "Not supplied"],
               ["Document number", application.documentNumber ?? "Not supplied"],
               ["Date of birth", application.dateOfBirth ?? "Not supplied"],
@@ -206,7 +206,7 @@ export function OnboardingApplicationDetailPage({
             {application.reviewReasons.length > 0 ? (
               <ul className="mt-2 grid gap-2">
                 {application.reviewReasons.map((reason) => (
-                  <li className="border-b border-amber-100 py-2 text-sm text-amber-800 last:border-0" key={reason}>
+                  <li className={`border-b py-2 text-sm last:border-0 ${toneClass("warning", "badge")}`} key={reason}>
                     {reason}
                   </li>
                 ))}
@@ -222,7 +222,7 @@ export function OnboardingApplicationDetailPage({
         <SectionHeader title="Submission Metadata" detail="Operational source and confirmation record for audit review." />
         <DetailGrid
           rows={[
-            ["Submitted source", formatReview(application.submittedSource)],
+            ["Submitted source", formatStatusLabel(application.submittedSource)],
             ["Submitted by", application.submittedBy],
             ["Original user text", application.originalUserText ?? "Not captured"],
             ["Confirmation text", application.confirmationText ?? "Not captured"],
@@ -332,29 +332,25 @@ function DetailGrid({ rows }: { rows: [string, string][] }) {
   );
 }
 
-function SummaryTile({ label, value }: { label: string; value: string }) {
+function SummaryTile({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-normal text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold capitalize text-gray-900">{value}</p>
+      <div className="mt-1 text-sm font-semibold capitalize text-gray-900">{value}</div>
     </div>
   );
 }
 
 function KycStatusIcon({ status }: { status: KycCheckStatus }) {
   if (status === "pass") {
-    return <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />;
+    return <CheckCircle2 className={`mt-0.5 h-5 w-5 shrink-0 ${toneClass(statusTone(status), "icon")}`} />;
   }
 
   if (status === "fail") {
-    return <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />;
+    return <XCircle className={`mt-0.5 h-5 w-5 shrink-0 ${toneClass(statusTone(status), "icon")}`} />;
   }
 
-  return <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />;
-}
-
-function formatReview(value: string) {
-  return value.replaceAll("_", " ");
+  return <AlertTriangle className={`mt-0.5 h-5 w-5 shrink-0 ${toneClass(statusTone(status), "icon")}`} />;
 }
 
 function generateDemoApplicationProfile() {
