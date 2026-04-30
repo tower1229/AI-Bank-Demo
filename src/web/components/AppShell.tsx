@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
-import { ChevronRight } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { ChevronRight, RotateCcw, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatTime } from "../lib/format";
 import type { RouteNavigationMeta } from "../navigation";
 import { navigationGroups } from "../navigation";
-import type { LoadState, NavItem } from "../types";
+import type { NavItem } from "../types";
 import { Notice, statusTone, toneClass } from "./common";
 
 export function AppShell({
@@ -15,8 +15,8 @@ export function AppShell({
   healthCheckedAt,
   message,
   routeMeta,
-  state,
-  statusLabel
+  statusLabel,
+  onResetDemoData
 }: {
   activeItem: NavItem;
   children: ReactNode;
@@ -25,10 +25,23 @@ export function AppShell({
   healthCheckedAt: string | null;
   message: string | null;
   routeMeta: RouteNavigationMeta;
-  state: LoadState;
   statusLabel: string;
+  onResetDemoData: () => Promise<void>;
 }) {
   const ActiveIcon = activeItem.icon;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  async function resetData() {
+    setResetting(true);
+
+    try {
+      await onResetDemoData();
+      setMenuOpen(false);
+    } finally {
+      setResetting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F6F7F9] text-gray-900 lg:flex">
@@ -65,14 +78,45 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto border-t border-white/10 p-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-[#FF5A00] text-xs font-black text-white">
-              AB
+          <div className="relative flex items-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-[#FF5A00] text-xs font-black text-white">
+                AB
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold tracking-wide text-white">Core Bank System</p>
+                <p className="truncate text-xs text-gray-500">RM operations console</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-white tracking-wide">Core Bank System</p>
-              <p className="text-xs text-gray-500">RM operations console</p>
-            </div>
+            <button
+              aria-expanded={menuOpen}
+              aria-label="Console settings"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-white/10 text-gray-400 transition hover:bg-white/5 hover:text-white"
+              onClick={() => setMenuOpen((open) => !open)}
+              type="button"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+            {menuOpen ? (
+              <div className="absolute bottom-full right-0 z-20 mb-3 w-60 rounded-lg border border-white/10 bg-[#1B1B1B] p-2 shadow-xl">
+                <div className="mb-2 border-b border-white/10 px-3 pb-3 pt-2">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-normal text-gray-500">Seed status</p>
+                  <span className={statusClass(statusLabel)}>
+                    <span className="h-2 w-2 rounded-full bg-current" />
+                    {statusLabel}
+                  </span>
+                </div>
+                <button
+                  className="flex w-full min-h-10 items-center gap-2 rounded-md px-3 text-left text-sm font-semibold text-red-300 transition hover:bg-red-500/10 hover:text-red-200 disabled:cursor-not-allowed disabled:text-gray-500"
+                  disabled={resetting}
+                  onClick={resetData}
+                  type="button"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  {resetting ? "Resetting..." : "Reset data"}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </aside>
@@ -105,10 +149,6 @@ export function AppShell({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className={statusClass(state)}>
-                <span className="h-2 w-2 rounded-full bg-current" />
-                {statusLabel}
-              </span>
               <span className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-600 shadow-sm">
                 {healthCheckedAt ? formatTime(healthCheckedAt) : "Waiting for API"}
               </span>
@@ -124,14 +164,6 @@ export function AppShell({
   );
 }
 
-function statusClass(state: LoadState): string {
-  if (state === "ready") {
-    return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("seeded"), "shell")}`;
-  }
-
-  if (state === "error") {
-    return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("error"), "shell")}`;
-  }
-
-  return `inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone("loading"), "shell")}`;
+function statusClass(statusLabel: string): string {
+  return `inline-flex min-h-8 items-center gap-2 rounded-md border px-3 text-sm font-semibold ${toneClass(statusTone(statusLabel), "shell")}`;
 }

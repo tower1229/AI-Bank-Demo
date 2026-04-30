@@ -53,6 +53,12 @@ export interface ApproveOnboardingApplicationInput extends ConfirmedInput {
   applicationId: string;
 }
 
+export interface DeleteCustomerDemoDataInput extends ConfirmedInput {
+  customerId: string;
+}
+
+export interface ResetDemoDataInput extends ConfirmedInput {}
+
 export interface CreateTransferInput extends ConfirmedInput {
   fromAccountId?: string;
   fromAccountNumber?: string;
@@ -169,6 +175,31 @@ export interface CustomerPortfolio {
   accounts: AccountDetail[];
   holdings: HoldingDetail[];
   recentTransactions: TransactionDetail[];
+}
+
+export interface DeleteCustomerDemoDataResult {
+  customerId: string;
+  customerName: string;
+  deleted: {
+    applications: number;
+    accounts: number;
+    holdings: number;
+    transactions: number;
+  };
+  displayMessage: string;
+}
+
+export interface ResetDemoDataResult {
+  displayMessage: string;
+  counts: {
+    customers: number;
+    accounts: number;
+    products: number;
+    holdings: number;
+    transactions: number;
+    onboardingApplications: number;
+    auditLogs: number;
+  };
 }
 
 export interface ProductDetail {
@@ -837,6 +868,142 @@ export async function getCustomerPortfolio(db: D1Database, customerId: string): 
   };
 }
 
+export async function deleteCustomerDemoData(
+  db: D1Database,
+  input: DeleteCustomerDemoDataInput,
+  context: OperationContext
+): Promise<DeleteCustomerDemoDataResult> {
+  requireConfirmed(input);
+  const customer = await getCustomer(db, input.customerId);
+
+  if (customer.id.startsWith("seed-")) {
+    throw new BankServiceError("SEEDED_CUSTOMER_PROTECTED", "Seeded baseline customers cannot be deleted from the demo console.");
+  }
+
+  const crossCustomerTransfer = await db
+    .prepare(
+      `SELECT t.id
+      FROM transactions t
+      LEFT JOIN accounts fa ON fa.id = t.from_account_id
+      LEFT JOIN accounts ta ON ta.id = t.to_account_id
+      WHERE t.transaction_type = 'internal_transfer'
+        AND (
+          (fa.customer_id = ? AND ta.customer_id IS NOT NULL AND ta.customer_id <> ?)
+          OR (ta.customer_id = ? AND fa.customer_id IS NOT NULL AND fa.customer_id <> ?)
+        )
+      LIMIT 1`
+    )
+    .bind(customer.id, customer.id, customer.id, customer.id)
+    .first<{ id: string }>();
+
+  if (crossCustomerTransfer) {
+    throw new BankServiceError(
+      "CUSTOMER_HAS_CROSS_TRANSFERS",
+      "This client has transfer history with another active client. Use Reset data to return the full demo to the seed baseline."
+    );
+  }
+
+  const [applicationRows, accountRows, holdingRows, transactionRows] = await Promise.all([
+    db
+      .prepare("SELECT id FROM onboarding_applications WHERE created_customer_id = ?")
+      .bind(customer.id)
+      .all<{ id: string }>(),
+    db.prepare("SELECT id FROM accounts WHERE customer_id = ?").bind(customer.id).all<{ id: string }>(),
+    db.prepare("SELECT id FROM holdings WHERE customer_id = ?").bind(customer.id).all<{ id: string }>(),
+    db
+      .prepare(
+        `SELECT DISTINCT id
+        FROM transactions
+        WHERE customer_id = ?
+          OR from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+          OR to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+          OR holding_id IN (SELECT id FROM holdings WHERE customer_id = ?)`
+      )
+      .bind(customer.id, customer.id, customer.id, customer.id)
+      .all<{ id: string }>()
+  ]);
+
+  const deleted = {
+    applications: applicationRows.results?.length ?? 0,
+    accounts: accountRows.results?.length ?? 0,
+    holdings: holdingRows.results?.length ?? 0,
+    transactions: transactionRows.results?.length ?? 0
+  };
+  const transactionScope = `
+    customer_id = ?
+      OR from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+      OR to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+      OR holding_id IN (SELECT id FROM holdings WHERE customer_id = ?)
+  `;
+  const displayMessage = `${customer.display_name} demo client data was deleted. Removed ${deleted.accounts} account(s), ${deleted.holdings} holding(s), ${deleted.transactions} transaction(s), and ${deleted.applications} onboarding application(s).`;
+
+  await db.batch([
+    db
+      .prepare(
+        `DELETE FROM audit_logs
+        WHERE (entity_type = 'transaction' AND entity_id IN (SELECT id FROM transactions WHERE ${transactionScope}))
+          OR (entity_type = 'onboarding_application' AND entity_id IN (SELECT id FROM onboarding_applications WHERE created_customer_id = ?))
+          OR (entity_type = 'customer' AND entity_id = ?)`
+      )
+      .bind(customer.id, customer.id, customer.id, customer.id, customer.id, customer.id),
+    db.prepare(`DELETE FROM transactions WHERE ${transactionScope}`).bind(customer.id, customer.id, customer.id, customer.id),
+    db.prepare("DELETE FROM onboarding_applications WHERE created_customer_id = ?").bind(customer.id),
+    db.prepare("DELETE FROM holdings WHERE customer_id = ?").bind(customer.id),
+    db.prepare("DELETE FROM accounts WHERE customer_id = ?").bind(customer.id),
+    db.prepare("DELETE FROM customers WHERE id = ?").bind(customer.id)
+  ]);
+
+  await writeAuditLog(db, {
+    action: "delete_customer_demo_data",
+    context,
+    status: "success",
+    entityType: "customer",
+    entityId: customer.id,
+    structuredParams: input,
+    resultMessage: displayMessage
+  });
+
+  return {
+    customerId: customer.id,
+    customerName: customer.display_name,
+    deleted,
+    displayMessage
+  };
+}
+
+export async function resetDemoData(
+  db: D1Database,
+  input: ResetDemoDataInput,
+  _context: OperationContext
+): Promise<ResetDemoDataResult> {
+  requireConfirmed(input);
+
+  await db.batch([
+    db.prepare("DELETE FROM audit_logs"),
+    db.prepare("DELETE FROM transactions"),
+    db.prepare("DELETE FROM onboarding_applications"),
+    db.prepare("DELETE FROM holdings"),
+    db.prepare("DELETE FROM accounts"),
+    db.prepare("DELETE FROM customers"),
+    db.prepare("DELETE FROM products")
+  ]);
+
+  await db.batch(seedStatements(db));
+
+  return {
+    displayMessage: "Demo data has been reset to the seeded baseline.",
+    counts: {
+      customers: 3,
+      accounts: 3,
+      products: 3,
+      holdings: 2,
+      transactions: 5,
+      onboardingApplications: 1,
+      auditLogs: 2
+    }
+  };
+}
+
 export async function listAuditLogs(db: D1Database, limit = 50): Promise<AuditLogEntry[]> {
   const result = await db
     .prepare(
@@ -859,6 +1026,92 @@ export async function listAuditLogs(db: D1Database, limit = 50): Promise<AuditLo
     .all<AuditLogEntry>();
 
   return result.results ?? [];
+}
+
+function seedStatements(db: D1Database): D1PreparedStatement[] {
+  return [
+    db.prepare(
+      `INSERT INTO customers (
+        id, display_name, legal_name, nationality, date_of_birth, risk_profile,
+        relationship_manager_id, status, created_at, updated_at
+      ) VALUES
+        ('seed-customer-zhang-san', 'Zhang San', 'Zhang San', 'China', '1982-03-14', 'medium', 'demo-rm', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-customer-li-si', 'Li Si', 'Li Si', 'Singapore', '1978-09-08', 'medium', 'demo-rm', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-customer-wang-wu', 'Wang Wu', 'Wang Wu', 'China', '1975-11-20', 'high', 'demo-rm', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z')`
+    ),
+    db.prepare(
+      `INSERT INTO accounts (
+        id, customer_id, account_number, account_type, currency, balance_cents,
+        status, opened_at, created_at, updated_at
+      ) VALUES
+        ('seed-account-zhang-san-usd', 'seed-customer-zhang-san', 'PB-USD-1028', 'private_banking', 'USD', 100000000, 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-account-li-si-usd', 'seed-customer-li-si', 'PB-USD-4186', 'private_banking', 'USD', 30000000, 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-account-wang-wu-usd', 'seed-customer-wang-wu', 'PB-USD-8820', 'private_banking', 'USD', 200000000, 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z')`
+    ),
+    db.prepare(
+      `INSERT INTO products (
+        id, name, risk_level, currency, minimum_subscription_cents, lockup_months,
+        expected_yield_label, status, created_at, updated_at
+      ) VALUES
+        ('seed-product-cash-plus', 'USD Cash Plus', 'low', 'USD', 1000000, 0, 'Floating cash management yield', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-product-balanced', 'Global Balanced Portfolio', 'medium', 'USD', 5000000, 0, 'Multi-asset balanced strategy', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-product-pe-growth', 'Private Equity Growth Fund', 'high', 'USD', 25000000, 60, 'Long-term private equity growth', 'active', '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z')`
+    ),
+    db.prepare(
+      `INSERT INTO holdings (
+        id, customer_id, account_id, product_id, currency, units, cost_basis_cents,
+        market_value_cents, opened_at, updated_at
+      ) VALUES
+        ('seed-holding-zhang-balanced', 'seed-customer-zhang-san', 'seed-account-zhang-san-usd', 'seed-product-balanced', 'USD', 250000, 25000000, 25400000, '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z'),
+        ('seed-holding-wang-pe', 'seed-customer-wang-wu', 'seed-account-wang-wu-usd', 'seed-product-pe-growth', 'USD', 500000, 50000000, 51250000, '2026-04-29T00:00:00.000Z', '2026-04-29T00:00:00.000Z')`
+    ),
+    db.prepare(
+      `INSERT INTO transactions (
+        id, transaction_type, status, from_account_id, to_account_id, customer_id,
+        product_id, holding_id, amount_cents, currency, memo, source, operator_id,
+        original_user_text, confirmation_text, risk_mismatch_acknowledged, created_at
+      ) VALUES
+        ('seed-tx-zhang-initial', 'initial_deposit', 'posted', NULL, 'seed-account-zhang-san-usd', 'seed-customer-zhang-san', NULL, NULL, 100000000, 'USD', 'Seed initial deposit', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:01:00.000Z'),
+        ('seed-tx-li-initial', 'initial_deposit', 'posted', NULL, 'seed-account-li-si-usd', 'seed-customer-li-si', NULL, NULL, 30000000, 'USD', 'Seed initial deposit', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:02:00.000Z'),
+        ('seed-tx-wang-initial', 'initial_deposit', 'posted', NULL, 'seed-account-wang-wu-usd', 'seed-customer-wang-wu', NULL, NULL, 200000000, 'USD', 'Seed initial deposit', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:03:00.000Z'),
+        ('seed-tx-zhang-balanced', 'product_purchase', 'posted', 'seed-account-zhang-san-usd', NULL, 'seed-customer-zhang-san', 'seed-product-balanced', 'seed-holding-zhang-balanced', 25000000, 'USD', 'Seed balanced portfolio holding', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:04:00.000Z'),
+        ('seed-tx-wang-pe', 'product_purchase', 'posted', 'seed-account-wang-wu-usd', NULL, 'seed-customer-wang-wu', 'seed-product-pe-growth', 'seed-holding-wang-pe', 50000000, 'USD', 'Seed private equity holding', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:05:00.000Z')`
+    ),
+    db.prepare(
+      `INSERT INTO onboarding_applications (
+        id, status, customer_name, document_capture_method, document_provided,
+        document_type, document_number, document_expiry_date, date_of_birth,
+        nationality, residential_address, occupation_title, initial_deposit_cents,
+        currency, source_of_funds, is_pep, initial_review, kyc_status,
+        kyc_summary, kyc_checks_json, review_reasons_json, address_proof_provided,
+        address_proof_capture_method, address_proof_type, address_proof_holder_name,
+        address_proof_address, address_proof_issue_date, kyc_evidence_provided,
+        kyc_evidence_capture_method, submitted_source, submitted_by,
+        original_user_text, structured_params_json, confirmation_text, approved_by,
+        approved_at, created_customer_id, created_account_id, created_at, updated_at
+      ) VALUES (
+        'seed-onboarding-pending', 'pending_approval', 'Chen Ming', 'manual_text', 1,
+        'passport', 'E76543210', '2031-06-30', '1980-06-12', 'China',
+        '1 Demo Road, Hong Kong', 'Family office principal', 75000000, 'USD',
+        'Business dividends', 0, 'standard_review', 'standard_review',
+        'KYC review passed for standard bank approval.',
+        '[{"key":"identity_document","label":"Identity document capture","status":"pass","detail":"Structured identity fields were supplied manually for the demo record."},{"key":"address_proof","label":"Address proof","status":"pass","detail":"Address proof details were supplied for the onboarding record."},{"key":"age_eligibility","label":"Age eligibility","status":"pass","detail":"Date of birth indicates the applicant is at least 18 years old."},{"key":"document_validity","label":"Document validity","status":"pass","detail":"Identity document expiry date is in the future."},{"key":"pep_declaration","label":"PEP declaration","status":"pass","detail":"Applicant is not declared as a politically exposed person."},{"key":"source_of_funds","label":"Source of funds","status":"pass","detail":"Source of funds is specific enough for standard bank review."},{"key":"kyc_evidence","label":"KYC evidence","status":"pass","detail":"Additional KYC evidence image was received for intake review."}]',
+        '[]', 1, 'manual_text', 'utility bill', 'Chen Ming',
+        '1 Demo Road, Hong Kong', '2026-03-15', 1, 'manual_upload',
+        'manual_web', 'demo-operator', NULL, '{"seed":true}', 'Seed pending application',
+        NULL, NULL, NULL, NULL, '2026-04-29T00:06:00.000Z', '2026-04-29T00:06:00.000Z'
+      )`
+    ),
+    db.prepare(
+      `INSERT INTO audit_logs (
+        id, action, source, operator_id, operator_display_name, status, entity_type,
+        entity_id, original_user_text, structured_params_json, confirmation_text,
+        result_message, created_at
+      ) VALUES
+        ('seed-audit-load', 'seed_data_loaded', 'manual_web', 'demo-operator', 'Demo Operator', 'success', 'system', 'seed', NULL, '{"customers":3,"products":3}', 'Seed data load', 'Seed client book and products are available.', '2026-04-29T00:07:00.000Z'),
+        ('seed-audit-pending-onboarding', 'create_onboarding_application', 'manual_web', 'demo-operator', 'Demo Operator', 'success', 'onboarding_application', 'seed-onboarding-pending', NULL, '{"seed":true}', 'Seed pending application', 'Pending onboarding application created for dashboard demo.', '2026-04-29T00:08:00.000Z')`
+    )
+  ];
 }
 
 function onboardingSelectColumns(): string {

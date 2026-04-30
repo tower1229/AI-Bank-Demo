@@ -25,3 +25,18 @@ export async function postJson<T>(url: string, body: unknown): Promise<ApiRespon
 
   return payload;
 }
+
+export async function deleteJson<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const payload = (await response.json()) as ApiResponse<T>;
+
+  if (!response.ok || !payload.ok) {
+    throw new Error(payload.displayMessage ?? `Request failed: ${url}`);
+  }
+
+  return payload;
+}

@@ -3,6 +3,7 @@ import {
   approveOnboardingApplication,
   createOnboardingApplication,
   createTransfer,
+  deleteCustomerDemoData,
   getCustomerPortfolio,
   getOnboardingApplication,
   listAuditLogs,
@@ -10,12 +11,15 @@ import {
   listPaymentInstructions,
   listProducts,
   purchaseProduct,
+  resetDemoData,
   searchCustomers,
   type ApproveOnboardingApplicationInput,
   type CreateOnboardingApplicationInput,
   type CreateTransferInput,
+  type DeleteCustomerDemoDataInput,
   type OperationContext,
-  type PurchaseProductInput
+  type PurchaseProductInput,
+  type ResetDemoDataInput
 } from "../bank/service";
 import { json, methodNotAllowed, notFound, readJson, serverError } from "./http";
 
@@ -46,6 +50,20 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         displayMessage: seedStatus.seeded
           ? "Seed data is available."
           : "Seed data is missing or incomplete."
+      });
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/demo/reset") {
+      const body = await readJson<ResetDemoDataInput>(request);
+      const result = await resetDemoData(env.DB, body, {
+        ...webContext,
+        confirmationText: body.confirmed ? "Manual web seed reset confirmation" : undefined
+      });
+
+      return json({
+        ok: true,
+        data: result,
+        displayMessage: result.displayMessage
       });
     }
 
@@ -123,6 +141,29 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    const customerMatch = url.pathname.match(/^\/api\/customers\/([^/]+)$/);
+    if (customerMatch) {
+      if (request.method !== "DELETE") {
+        return methodNotAllowed(request.method);
+      }
+
+      const body = await readJson<Omit<DeleteCustomerDemoDataInput, "customerId">>(request);
+      const result = await deleteCustomerDemoData(
+        env.DB,
+        { ...body, customerId: customerMatch[1] },
+        {
+          ...webContext,
+          confirmationText: body.confirmed ? "Manual web customer data reset confirmation" : undefined
+        }
+      );
+
+      return json({
+        ok: true,
+        data: result,
+        displayMessage: result.displayMessage
+      });
+    }
+
     const portfolioMatch = url.pathname.match(/^\/api\/customers\/([^/]+)\/portfolio$/);
     if (portfolioMatch) {
       if (request.method !== "GET") {
@@ -192,6 +233,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       const supportedPath =
         url.pathname === "/api/health" ||
         url.pathname === "/api/seed/status" ||
+        url.pathname === "/api/demo/reset" ||
         url.pathname === "/api/dashboard" ||
         url.pathname === "/api/onboarding/applications" ||
         url.pathname === "/api/customers" ||
@@ -201,6 +243,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         url.pathname === "/api/audit-logs" ||
         Boolean(onboardingDetailMatch) ||
         Boolean(onboardingApproveMatch) ||
+        Boolean(customerMatch) ||
         Boolean(portfolioMatch);
 
       if (supportedPath) {

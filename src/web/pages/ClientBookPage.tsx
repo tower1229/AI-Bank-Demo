@@ -1,9 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import type { CustomerPortfolio, CustomerSearchResult } from "../../bank/service";
+import { Trash2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { CustomerPortfolio, CustomerSearchResult, DeleteCustomerDemoDataResult } from "../../bank/service";
 import { CustomerTypeahead, MiniTable, Notice, RiskBadge, SectionHeader, StatusBadge } from "../components/common";
-import { fetchJson } from "../lib/api";
+import { deleteJson, fetchJson } from "../lib/api";
 import { formatTime, formatUsd } from "../lib/format";
+import type { RunAction } from "../types";
 
 export function ClientBookPage({ initialCustomers }: { initialCustomers: CustomerSearchResult[] }) {
   const [query, setQuery] = useState("");
@@ -86,10 +88,12 @@ export function ClientBookPage({ initialCustomers }: { initialCustomers: Custome
   );
 }
 
-export function ClientPortfolioPage() {
+export function ClientPortfolioPage({ runAction }: { runAction: RunAction }) {
   const { customerId } = useParams();
+  const navigate = useNavigate();
   const [portfolio, setPortfolio] = useState<CustomerPortfolio | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -121,9 +125,50 @@ export function ClientPortfolioPage() {
     };
   }, [customerId]);
 
+  async function deleteCustomer() {
+    if (!customerId || !portfolio || deleting) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete ${portfolio.customer.name}'s demo client data? This removes the client, accounts, holdings, transactions, and linked onboarding application.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleting(true);
+    const succeeded = await runAction(async () => {
+      const response = await deleteJson<DeleteCustomerDemoDataResult>(`/api/customers/${customerId}`, { confirmed: true });
+      return response.displayMessage ?? `${portfolio.customer.name} demo client data was deleted.`;
+    });
+    setDeleting(false);
+
+    if (succeeded) {
+      navigate("/client-book");
+    }
+  }
+
+  const seedProtected = portfolio?.customer.id.startsWith("seed-") ?? false;
+
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Client 360 Portfolio" detail="Accounts, holdings, and recent account activity." />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <SectionHeader title="Client 360 Portfolio" detail="Accounts, holdings, and recent account activity." />
+        {portfolio ? (
+          <button
+            className="inline-flex min-h-10 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
+            disabled={deleting || seedProtected}
+            onClick={deleteCustomer}
+            title={seedProtected ? "Seed baseline clients cannot be deleted." : "Delete this demo client data."}
+            type="button"
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleting ? "Deleting..." : "Delete demo data"}
+          </button>
+        ) : null}
+      </div>
       {error ? <Notice tone="error" text={error} /> : null}
       {portfolio ? (
         <div className="mt-5 space-y-5">

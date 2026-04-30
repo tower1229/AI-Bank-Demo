@@ -3,7 +3,9 @@ import {
   BankServiceError,
   createOnboardingApplication,
   createTransfer,
+  deleteCustomerDemoData,
   purchaseProduct,
+  resetDemoData,
   type OperationContext
 } from "./service";
 
@@ -32,6 +34,15 @@ describe("bank service validation", () => {
         currency: "USD",
         sourceOfFunds: "Company dividends",
         isPep: false
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "CONFIRMATION_REQUIRED" });
+  });
+
+  it("rejects customer demo data deletion without confirmation", async () => {
+    await expect(
+      deleteCustomerDemoData({} as D1Database, {
+        confirmed: false,
+        customerId: "customer-demo"
       }, context)
     ).rejects.toMatchObject({ errorCode: "CONFIRMATION_REQUIRED" });
   });
@@ -193,6 +204,83 @@ describe("bank service validation", () => {
       }, context)
     ).rejects.toMatchObject({ errorCode: "DOCUMENT_EXPIRED" });
   });
+
+  it("blocks seeded baseline customer deletion", async () => {
+    const db = new DeleteCustomerFakeD1("seed-customer-1");
+
+    await expect(
+      deleteCustomerDemoData(db as unknown as D1Database, {
+        confirmed: true,
+        customerId: "seed-customer-1"
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "SEEDED_CUSTOMER_PROTECTED" });
+    expect(db.batches).toHaveLength(0);
+  });
+
+  it("deletes linked customer demo records", async () => {
+    const db = new DeleteCustomerFakeD1("customer-demo");
+    const result = await deleteCustomerDemoData(db as unknown as D1Database, {
+      confirmed: true,
+      customerId: "customer-demo"
+    }, context);
+
+    expect(result.customerName).toBe("Demo Client");
+    expect(result.deleted).toEqual({
+      applications: 1,
+      accounts: 2,
+      holdings: 1,
+      transactions: 2
+    });
+    expect(db.batches[0].map((sql) => sql.replace(/\s+/g, " ").trim())).toEqual([
+      expect.stringContaining("DELETE FROM audit_logs"),
+      expect.stringContaining("DELETE FROM transactions"),
+      "DELETE FROM onboarding_applications WHERE created_customer_id = ?",
+      "DELETE FROM holdings WHERE customer_id = ?",
+      "DELETE FROM accounts WHERE customer_id = ?",
+      "DELETE FROM customers WHERE id = ?"
+    ]);
+    expect(db.auditActions).toContain("delete_customer_demo_data");
+  });
+
+  it("blocks single-customer deletion when cross-customer transfers exist", async () => {
+    const db = new DeleteCustomerFakeD1("customer-demo", true);
+
+    await expect(
+      deleteCustomerDemoData(db as unknown as D1Database, {
+        confirmed: true,
+        customerId: "customer-demo"
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "CUSTOMER_HAS_CROSS_TRANSFERS" });
+    expect(db.batches).toHaveLength(0);
+  });
+
+  it("resets demo data to seeded baseline", async () => {
+    const db = new ResetDemoFakeD1();
+    const result = await resetDemoData(db as unknown as D1Database, { confirmed: true }, context);
+
+    expect(result.counts).toMatchObject({
+      customers: 3,
+      accounts: 3,
+      products: 3,
+      holdings: 2,
+      transactions: 5,
+      onboardingApplications: 1,
+      auditLogs: 2
+    });
+    expect(db.batches).toHaveLength(2);
+    expect(db.batches[0]).toEqual([
+      "DELETE FROM audit_logs",
+      "DELETE FROM transactions",
+      "DELETE FROM onboarding_applications",
+      "DELETE FROM holdings",
+      "DELETE FROM accounts",
+      "DELETE FROM customers",
+      "DELETE FROM products"
+    ]);
+    expect(db.batches[1]).toHaveLength(7);
+    expect(db.batches[1][0]).toContain("INSERT INTO customers");
+    expect(db.batches[1][6]).toContain("INSERT INTO audit_logs");
+  });
 });
 
 class OnboardingFakeD1 {
@@ -326,5 +414,94 @@ class LookupFakeD1 {
 
   async batch() {
     throw new BankServiceError("UNEXPECTED_WRITE", "The test should fail before writing.");
+  }
+}
+
+class DeleteCustomerFakeD1 {
+  batches: string[][] = [];
+  auditActions: unknown[] = [];
+
+  constructor(
+    private readonly customerId: string,
+    private readonly hasCrossCustomerTransfer = false
+  ) {}
+
+  prepare(sql: string) {
+    return {
+      bind: (...args: unknown[]) => ({
+        sql,
+        toString: () => sql,
+        first: async () => {
+          if (sql.includes("FROM customers")) {
+            return {
+              id: args[0],
+              display_name: args[0] === this.customerId ? "Demo Client" : "Other Client",
+              legal_name: "Demo Client",
+              risk_profile: "medium",
+              status: "active"
+            };
+          }
+
+          if (sql.includes("transaction_type = 'internal_transfer'")) {
+            return this.hasCrossCustomerTransfer ? { id: "tx-cross-customer" } : null;
+          }
+
+          return null;
+        },
+        all: async () => {
+          if (sql.includes("FROM transactions")) {
+            return { results: [{ id: "tx-demo-1" }, { id: "tx-demo-2" }] };
+          }
+
+          if (sql.includes("FROM onboarding_applications")) {
+            return { results: [{ id: "application-demo" }] };
+          }
+
+          if (sql.includes("FROM accounts")) {
+            return { results: [{ id: "account-demo-1" }, { id: "account-demo-2" }] };
+          }
+
+          if (sql.includes("FROM holdings")) {
+            return { results: [{ id: "holding-demo" }] };
+          }
+
+          return { results: [] };
+        },
+        run: async () => {
+          if (sql.includes("INSERT INTO audit_logs")) {
+            this.auditActions.push(args[1]);
+          }
+
+          return { success: true };
+        }
+      })
+    };
+  }
+
+  async batch(statements: D1PreparedStatement[]) {
+    this.batches.push(statements.map((statement) => String(statement)));
+    return statements.map(() => ({ success: true }));
+  }
+}
+
+class ResetDemoFakeD1 {
+  batches: string[][] = [];
+
+  prepare(sql: string) {
+    return {
+      sql,
+      toString: () => sql,
+      run: async () => ({ success: true }),
+      bind: () => ({
+        sql,
+        toString: () => sql,
+        run: async () => ({ success: true })
+      })
+    };
+  }
+
+  async batch(statements: D1PreparedStatement[]) {
+    this.batches.push(statements.map((statement) => String(statement)));
+    return statements.map(() => ({ success: true }));
   }
 }

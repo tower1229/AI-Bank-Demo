@@ -13,6 +13,10 @@ class SmokeD1 {
       bind: (...args: unknown[]) => query(sql, this, args)
     };
   }
+
+  async batch(statements: Array<{ run?: () => Promise<unknown> }>) {
+    return Promise.all(statements.map((statement) => statement.run?.() ?? { success: true }));
+  }
 }
 
 const env = { DB: new SmokeD1() as unknown as D1Database } as Env;
@@ -69,6 +73,55 @@ describe("worker API smoke", () => {
         minimumSubscriptionCents: 1000000
       })
     ]);
+  });
+
+  it("deletes customer demo data", async () => {
+    const response = await handleApi(
+      new Request("http://local.test/api/customers/customer-smoke", {
+        method: "DELETE",
+        body: JSON.stringify({ confirmed: true })
+      }),
+      newEnv()
+    );
+    const body = (await response.json()) as JsonObject;
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.data).toMatchObject({
+      customerId: "customer-smoke",
+      customerName: "Smoke Client",
+      deleted: {
+        applications: 1,
+        accounts: 1,
+        holdings: 1,
+        transactions: 1
+      }
+    });
+    expect(body.displayMessage).toContain("demo client data was deleted");
+  });
+
+  it("resets demo data to seed state", async () => {
+    const response = await handleApi(
+      new Request("http://local.test/api/demo/reset", {
+        method: "POST",
+        body: JSON.stringify({ confirmed: true })
+      }),
+      newEnv()
+    );
+    const body = (await response.json()) as JsonObject;
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.data.counts).toMatchObject({
+      customers: 3,
+      accounts: 3,
+      products: 3,
+      holdings: 2,
+      transactions: 5,
+      onboardingApplications: 1,
+      auditLogs: 2
+    });
+    expect(body.displayMessage).toBe("Demo data has been reset to the seeded baseline.");
   });
 });
 
@@ -213,6 +266,16 @@ function query(sql: string, db: SmokeD1, args: unknown[] = []) {
         return {};
       }
 
+      if (sql.includes("FROM customers")) {
+        return {
+          id: args[0],
+          display_name: "Smoke Client",
+          legal_name: "Smoke Client",
+          risk_profile: "medium",
+          status: "active"
+        };
+      }
+
       if (sql.includes("FROM onboarding_applications")) {
         return db.application;
       }
@@ -254,6 +317,22 @@ function query(sql: string, db: SmokeD1, args: unknown[] = []) {
             }
           ]
         };
+      }
+
+      if (sql.includes("FROM transactions")) {
+        return { results: [{ id: "tx-smoke-delete" }] };
+      }
+
+      if (sql.includes("FROM onboarding_applications")) {
+        return { results: [{ id: "application-smoke-delete" }] };
+      }
+
+      if (sql.includes("FROM accounts")) {
+        return { results: [{ id: "account-smoke-delete" }] };
+      }
+
+      if (sql.includes("FROM holdings")) {
+        return { results: [{ id: "holding-smoke-delete" }] };
       }
 
       return { results: [] };

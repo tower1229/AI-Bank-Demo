@@ -49,7 +49,7 @@ export function statusTone(value: string): Tone {
     return "success";
   }
 
-  if (["pending", "pending_approval", "loading", "review", "enhanced_review", "needs_attention", "manual_review"].includes(normalized)) {
+  if (["pending", "pending_approval", "loading", "review", "enhanced_review", "needs_attention", "manual_review", "seed_missing"].includes(normalized)) {
     return "warning";
   }
 

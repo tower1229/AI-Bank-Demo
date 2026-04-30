@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import type { AuditLogEntry, CustomerSearchResult, OnboardingApplication, PaymentInstructionSummary, ProductDetail } from "../bank/service";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import type {
+  AuditLogEntry,
+  CustomerSearchResult,
+  OnboardingApplication,
+  PaymentInstructionSummary,
+  ProductDetail,
+  ResetDemoDataResult
+} from "../bank/service";
 import type { DashboardData, HealthData, SeedStatusData } from "../bank/types";
 import { AppShell } from "./components/AppShell";
 import { GlobalMcpToast } from "./components/GlobalMcpToast";
-import { fetchJson } from "./lib/api";
+import { fetchJson, postJson } from "./lib/api";
 import { getActiveNavigationItem, getRouteNavigationMeta } from "./navigation";
 import { AuditPage } from "./pages/AuditPage";
 import { ClientBookPage, ClientPortfolioPage } from "./pages/ClientBookPage";
@@ -27,6 +34,7 @@ const emptyData: AppData = {
 
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [state, setState] = useState<LoadState>("loading");
   const [data, setData] = useState<AppData>(emptyData);
   const [message, setMessage] = useState<string | null>(null);
@@ -86,6 +94,23 @@ export default function App() {
     }
   }
 
+  async function resetDemoData() {
+    const confirmed = window.confirm("Reset all console data to the seeded baseline?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    const succeeded = await runAction(async () => {
+      const response = await postJson<ResetDemoDataResult>("/api/demo/reset", { confirmed: true });
+      return response.displayMessage ?? "Demo data has been reset to the seeded baseline.";
+    });
+
+    if (succeeded) {
+      navigate("/dashboard");
+    }
+  }
+
   return (
     <AppShell
       activeItem={activeItem}
@@ -94,8 +119,8 @@ export default function App() {
       healthCheckedAt={data.health?.checkedAt ?? null}
       message={message}
       routeMeta={routeMeta}
-      state={state}
       statusLabel={statusLabel}
+      onResetDemoData={resetDemoData}
     >
       <GlobalMcpToast />
       <Routes>
@@ -105,7 +130,7 @@ export default function App() {
         <Route path="/client-lifecycle/new" element={<NewClientApplicationPage runAction={runAction} />} />
         <Route path="/client-lifecycle/:applicationId" element={<OnboardingApplicationDetailPage applications={data.applications} runAction={runAction} />} />
         <Route path="/client-book" element={<ClientBookPage initialCustomers={data.customers} />} />
-        <Route path="/client-book/:customerId" element={<ClientPortfolioPage />} />
+        <Route path="/client-book/:customerId" element={<ClientPortfolioPage runAction={runAction} />} />
         <Route path="/payments" element={<PaymentsPage paymentInstructions={data.paymentInstructions} />} />
         <Route path="/payments/new" element={<PaymentInstructionPage customers={data.customers} runAction={runAction} />} />
         <Route path="/investment-orders" element={<InvestmentOrdersPage products={data.products} />} />
