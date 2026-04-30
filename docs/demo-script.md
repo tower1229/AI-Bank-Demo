@@ -177,7 +177,7 @@ Important constraints:
 Telegram 输入：
 
 ```text
-帮客户 Chen Ming 开一个私人银行账户，首笔入金 750,000 美元，资金来自公司分红。
+Help client Chen Ming open a private banking account. The initial deposit is 750,000 USD, and the funds come from company dividends.
 ```
 
 预期 AI 行为：
@@ -204,13 +204,13 @@ chen-ming-address-proof.png
 如果现场不方便传图，可用文字备用：
 
 ```text
-使用手动证件信息。Referenced Document Type 是 Passport，Referenced Document No 是生成图上的编号，出生日期、国籍和有效期也按生成图填写。
+Use manual identity document information. Referenced Document Type is Passport, Referenced Document No is the number shown in the generated image, and the date of birth, nationality, and expiry date should match the generated image.
 ```
 
 补充信息：
 
 ```text
-他是 family office principal。不是 PEP。
+He is a family office principal. He is not a PEP.
 ```
 
 预期 AI 行为：
@@ -236,7 +236,7 @@ chen-ming-kyc-evidence.png
 确认话术：
 
 ```text
-确认并提交。
+Confirm and submit.
 ```
 
 预期结果：
@@ -253,7 +253,7 @@ chen-ming-kyc-evidence.png
 Telegram 输入：
 
 ```text
-帮 Zhang San 转 100,000 美元给 Li Si，备注是 family office fees。
+Help Zhang San transfer 100,000 USD to Li Si. Use the memo: family office fees.
 ```
 
 预期 AI 行为：
@@ -266,7 +266,7 @@ Telegram 输入：
 确认话术：
 
 ```text
-确认。
+Confirm.
 ```
 
 预期结果：
@@ -281,7 +281,7 @@ Telegram 输入：
 Telegram 输入：
 
 ```text
-给 Zhang San 买 250,000 美元的 Global Balanced Portfolio，用他的 USD 私人银行账户扣款。
+Buy 250,000 USD of Global Balanced Portfolio for Zhang San, funded from his USD private banking account.
 ```
 
 预期 AI 行为：
@@ -294,7 +294,7 @@ Telegram 输入：
 确认话术：
 
 ```text
-确认。
+Confirm.
 ```
 
 预期结果：
@@ -311,7 +311,7 @@ Telegram 输入：
 Telegram 输入：
 
 ```text
-帮客户 David Zhao 开一个私人银行账户。
+Help client David Zhao open a private banking account.
 ```
 
 预期行为：
@@ -328,13 +328,13 @@ Telegram 输入：
 Telegram 输入：
 
 ```text
-帮 Kevin Lin 开一个私人银行账户，首笔入金 300,000 美元，资金来自家庭赠与。
+Help Kevin Lin open a private banking account. The initial deposit is 300,000 USD, and the funds come from a family gift.
 ```
 
 补充：
 
 ```text
-居住地址是 12 Test Avenue, Shanghai。学生。不是 PEP。
+Residential address is 12 Test Avenue, Shanghai. He is a student. He is not a PEP.
 ```
 
 上传：
@@ -354,7 +354,7 @@ minor-client-kyc-demo.png
 Telegram 输入：
 
 ```text
-从 Li Si 的账户转 5,000,000 美元给 Zhang San。
+Transfer 5,000,000 USD from Li Si's account to Zhang San.
 ```
 
 预期行为：
@@ -368,7 +368,7 @@ Telegram 输入：
 Telegram 输入：
 
 ```text
-给 Zhang San 买 500,000 美元的 Private Equity Growth Fund。
+Buy 500,000 USD of Private Equity Growth Fund for Zhang San.
 ```
 
 预期行为：
@@ -382,13 +382,13 @@ Telegram 输入：
 Telegram 输入：
 
 ```text
-帮客户 Olivia Tan 开私人银行账户，首笔入金 1,200,000 美元，资金来自企业股权出售。
+Help client Olivia Tan open a private banking account. The initial deposit is 1,200,000 USD, and the funds come from the sale of company equity.
 ```
 
 补充：
 
 ```text
-居住地址是 9 Orchard Road, Singapore。职业是上市公司董事。PEP: Yes。
+Residential address is 9 Orchard Road, Singapore. Occupation is listed company director. PEP: Yes.
 ```
 
 上传：
