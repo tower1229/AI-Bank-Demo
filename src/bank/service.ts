@@ -53,6 +53,10 @@ export interface ApproveOnboardingApplicationInput extends ConfirmedInput {
   applicationId: string;
 }
 
+export interface RejectOnboardingApplicationInput extends ConfirmedInput {
+  applicationId: string;
+}
+
 export interface DeleteCustomerDemoDataInput extends ConfirmedInput {
   customerId: string;
 }
@@ -491,6 +495,47 @@ export async function approveOnboardingApplication(
 
   await writeAuditLog(db, {
     action: "approve_onboarding_application",
+    context,
+    status: "success",
+    entityType: "onboarding_application",
+    entityId: application.id,
+    structuredParams: input,
+    resultMessage: displayMessage
+  });
+
+  return {
+    application: await getOnboardingApplication(db, application.id),
+    displayMessage
+  };
+}
+
+export async function rejectOnboardingApplication(
+  db: D1Database,
+  input: RejectOnboardingApplicationInput,
+  context: OperationContext
+): Promise<{ application: OnboardingApplication; displayMessage: string }> {
+  requireConfirmed(input);
+  const application = await getOnboardingApplication(db, input.applicationId);
+
+  if (application.status !== "pending_approval") {
+    throw new BankServiceError("APPLICATION_NOT_PENDING", "Only pending onboarding applications can be rejected.");
+  }
+
+  const now = new Date().toISOString();
+  const displayMessage = `${application.customerName}'s onboarding application has been rejected.`;
+
+  await db
+    .prepare(
+      `UPDATE onboarding_applications
+      SET status = 'rejected',
+        updated_at = ?
+      WHERE id = ?`
+    )
+    .bind(now, application.id)
+    .run();
+
+  await writeAuditLog(db, {
+    action: "reject_onboarding_application",
     context,
     status: "success",
     entityType: "onboarding_application",
@@ -1113,38 +1158,12 @@ function seedStatements(db: D1Database): D1PreparedStatement[] {
         ('seed-tx-wang-pe', 'product_purchase', 'posted', 'seed-account-wang-wu-usd', NULL, 'seed-customer-wang-wu', 'seed-product-pe-growth', 'seed-holding-wang-pe', 50000000, 'USD', 'Seed private equity holding', 'manual_web', 'demo-operator', NULL, 'Seed data load', 0, '2026-04-29T00:05:00.000Z')`
     ),
     db.prepare(
-      `INSERT INTO onboarding_applications (
-        id, status, customer_name, document_capture_method, document_provided,
-        document_type, document_number, document_expiry_date, date_of_birth,
-        nationality, residential_address, occupation_title, initial_deposit_cents,
-        currency, source_of_funds, is_pep, initial_review, kyc_status,
-        kyc_summary, kyc_checks_json, review_reasons_json, address_proof_provided,
-        address_proof_capture_method, address_proof_type, address_proof_holder_name,
-        address_proof_address, address_proof_issue_date, kyc_evidence_provided,
-        kyc_evidence_capture_method, submitted_source, submitted_by,
-        original_user_text, structured_params_json, confirmation_text, approved_by,
-        approved_at, created_customer_id, created_account_id, created_at, updated_at
-      ) VALUES (
-        'seed-onboarding-pending', 'pending_approval', 'Chen Ming', 'manual_text', 1,
-        'passport', 'E76543210', '2031-06-30', '1980-06-12', 'China',
-        '1 Demo Road, Hong Kong', 'Family office principal', 75000000, 'USD',
-        'Business dividends', 0, 'standard_review', 'standard_review',
-        'KYC review passed for standard bank approval.',
-        '[{"key":"identity_document","label":"Identity document capture","status":"pass","detail":"Structured identity fields were supplied manually for the demo record."},{"key":"address_proof","label":"Address proof","status":"pass","detail":"Address proof details were supplied for the onboarding record."},{"key":"age_eligibility","label":"Age eligibility","status":"pass","detail":"Date of birth indicates the applicant is at least 18 years old."},{"key":"document_validity","label":"Document validity","status":"pass","detail":"Identity document expiry date is in the future."},{"key":"pep_declaration","label":"PEP declaration","status":"pass","detail":"Applicant is not declared as a politically exposed person."},{"key":"source_of_funds","label":"Source of funds","status":"pass","detail":"Source of funds is specific enough for standard bank review."},{"key":"kyc_evidence","label":"KYC evidence","status":"pass","detail":"Additional KYC evidence image was received for intake review."}]',
-        '[]', 1, 'manual_text', 'utility bill', 'Chen Ming',
-        '1 Demo Road, Hong Kong', '2026-03-15', 1, 'manual_upload',
-        'manual_web', 'demo-operator', NULL, '{"seed":true}', 'Seed pending application',
-        NULL, NULL, NULL, NULL, '2026-04-29T00:06:00.000Z', '2026-04-29T00:06:00.000Z'
-      )`
-    ),
-    db.prepare(
       `INSERT INTO audit_logs (
         id, action, source, operator_id, operator_display_name, status, entity_type,
         entity_id, original_user_text, structured_params_json, confirmation_text,
         result_message, created_at
       ) VALUES
-        ('seed-audit-load', 'seed_data_loaded', 'manual_web', 'demo-operator', 'Demo Operator', 'success', 'system', 'seed', NULL, '{"customers":3,"products":3}', 'Seed data load', 'Seed client book and products are available.', '2026-04-29T00:07:00.000Z'),
-        ('seed-audit-pending-onboarding', 'create_onboarding_application', 'manual_web', 'demo-operator', 'Demo Operator', 'success', 'onboarding_application', 'seed-onboarding-pending', NULL, '{"seed":true}', 'Seed pending application', 'Pending onboarding application created for dashboard demo.', '2026-04-29T00:08:00.000Z')`
+        ('seed-audit-load', 'seed_data_loaded', 'manual_web', 'demo-operator', 'Demo Operator', 'success', 'system', 'seed', NULL, '{"customers":3,"products":3}', 'Seed data load', 'Seed client book and products are available.', '2026-04-29T00:07:00.000Z')`
     )
   ];
 }

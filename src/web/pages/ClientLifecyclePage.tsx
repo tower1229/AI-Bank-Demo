@@ -139,6 +139,26 @@ export function OnboardingApplicationDetailPage({
     });
   }
 
+  async function reject() {
+    if (!application) return;
+
+    const isConfirmed = await confirm({
+      title: "Reject Client Onboarding",
+      description: `Reject the onboarding application for ${application.customerName}?`,
+      confirmText: "Reject"
+    });
+
+    if (!isConfirmed) return;
+
+    await runAction(async () => {
+      const response = await postJson<OnboardingApplication>(`/api/onboarding/applications/${application.id}/reject`, {
+        confirmed: true
+      });
+      if (response.data) setApplication(response.data);
+      return response.displayMessage ?? "Application rejected.";
+    });
+  }
+
   if (error) {
     return <Notice tone="error" text={error} />;
   }
@@ -153,13 +173,22 @@ export function OnboardingApplicationDetailPage({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <SectionHeader title={application.customerName} detail="Review applicant profile, KYC checks, and source metadata before approval." />
           {application.status === "pending_approval" ? (
-            <button
-              className="inline-flex min-h-10 items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
-              onClick={approve}
-              type="button"
-            >
-              Approve onboarding
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                className="inline-flex min-h-10 items-center justify-center rounded-md border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                onClick={reject}
+                type="button"
+              >
+                Reject
+              </button>
+              <button
+                className="inline-flex min-h-10 items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
+                onClick={approve}
+                type="button"
+              >
+                Approve onboarding
+              </button>
+            </div>
           ) : null}
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">

@@ -11,6 +11,7 @@ import {
   listPaymentInstructions,
   listProducts,
   purchaseProduct,
+  rejectOnboardingApplication,
   resetDemoData,
   searchCustomers,
   type ApproveOnboardingApplicationInput,
@@ -19,6 +20,7 @@ import {
   type DeleteCustomerDemoDataInput,
   type OperationContext,
   type PurchaseProductInput,
+  type RejectOnboardingApplicationInput,
   type ResetDemoDataInput
 } from "../bank/service";
 import { json, methodNotAllowed, notFound, readJson, serverError } from "./http";
@@ -123,6 +125,29 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         {
           ...webContext,
           confirmationText: body.confirmed ? "Manual web approval confirmation" : undefined
+        }
+      );
+
+      return json({
+        ok: true,
+        data: result.application,
+        displayMessage: result.displayMessage
+      });
+    }
+
+    const onboardingRejectMatch = url.pathname.match(/^\/api\/onboarding\/applications\/([^/]+)\/reject$/);
+    if (onboardingRejectMatch) {
+      if (request.method !== "POST") {
+        return methodNotAllowed(request.method);
+      }
+
+      const body = await readJson<Omit<RejectOnboardingApplicationInput, "applicationId">>(request);
+      const result = await rejectOnboardingApplication(
+        env.DB,
+        { ...body, applicationId: onboardingRejectMatch[1] },
+        {
+          ...webContext,
+          confirmationText: body.confirmed ? "Manual web rejection confirmation" : undefined
         }
       );
 
@@ -243,6 +268,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         url.pathname === "/api/audit-logs" ||
         Boolean(onboardingDetailMatch) ||
         Boolean(onboardingApproveMatch) ||
+        Boolean(onboardingRejectMatch) ||
         Boolean(customerMatch) ||
         Boolean(portfolioMatch);
 
