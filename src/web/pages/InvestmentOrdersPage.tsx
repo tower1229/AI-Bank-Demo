@@ -56,8 +56,8 @@ export function InvestmentOrdersPage({
                 </td>
                 <td className="px-4 py-4 text-sm text-gray-600">{product.expectedYieldLabel ?? "-"}</td>
                 <td className="px-4 py-4 text-right">
-                  <Link className="text-sm font-semibold text-violet-700 hover:text-violet-900" to={`/investment-orders/new?productId=${encodeURIComponent(product.id)}`}>
-                    Book order
+                  <Link className="text-sm font-semibold text-violet-700 hover:text-violet-900" to={`/investment-orders/${product.id}`}>
+                    View detail
                   </Link>
                 </td>
               </tr>
@@ -202,7 +202,14 @@ export function ProductDetailPage() {
 
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <SectionHeader title="Product Details" detail="Product information and recent transaction history." />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <SectionHeader title="Product Details" detail="Product information and recent transaction history." />
+        {portfolio ? (
+          <Link className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700" to={`/investment-orders/new?productId=${encodeURIComponent(portfolio.product.id)}`}>
+            Book Order
+          </Link>
+        ) : null}
+      </div>
       {error ? <Notice tone="error" text={error} /> : null}
       
       {portfolio ? (
@@ -230,11 +237,6 @@ export function ProductDetailPage() {
                 <p className="text-sm text-gray-500">Expected Yield</p>
                 <p className="mt-1 font-medium text-gray-900">{portfolio.product.expectedYieldLabel ?? "-"}</p>
               </div>
-            </div>
-            <div className="mt-6 flex gap-3">
-              <Link className="min-h-10 inline-flex items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700" to={`/investment-orders/new?productId=${encodeURIComponent(portfolio.product.id)}`}>
-                Book Order
-              </Link>
             </div>
           </div>
           
