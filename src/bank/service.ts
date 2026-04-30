@@ -182,6 +182,11 @@ export interface CustomerPortfolio {
   recentTransactions: TransactionDetail[];
 }
 
+export interface ProductPortfolio {
+  product: ProductDetail;
+  recentTransactions: TransactionDetail[];
+}
+
 export interface DeleteCustomerDemoDataResult {
   customerId: string;
   customerName: string;
@@ -736,6 +741,55 @@ export async function listProducts(db: D1Database): Promise<ProductDetail[]> {
     .all<ProductDetail>();
 
   return result.results ?? [];
+}
+
+export async function getProductPortfolio(db: D1Database, productId: string): Promise<ProductPortfolio> {
+  const [productResult, transactionResult] = await Promise.all([
+    db
+      .prepare(
+        `SELECT
+          id,
+          name,
+          risk_level AS riskLevel,
+          currency,
+          minimum_subscription_cents AS minimumSubscriptionCents,
+          lockup_months AS lockupMonths,
+          expected_yield_label AS expectedYieldLabel,
+          status
+        FROM products
+        WHERE id = ?`
+      )
+      .bind(productId)
+      .first<ProductDetail>(),
+    db
+      .prepare(
+        `SELECT
+          t.id,
+          t.transaction_type AS transactionType,
+          t.amount_cents AS amountCents,
+          t.currency,
+          t.memo,
+          t.source,
+          t.created_at AS createdAt,
+          c.display_name AS targetName
+        FROM transactions t
+        JOIN customers c ON c.id = t.customer_id
+        WHERE t.product_id = ?
+        ORDER BY t.created_at DESC
+        LIMIT 50`
+      )
+      .bind(productId)
+      .all<TransactionDetail>()
+  ]);
+
+  if (!productResult) {
+    throw new BankServiceError("PRODUCT_NOT_FOUND", "Product was not found.", 404);
+  }
+
+  return {
+    product: productResult,
+    recentTransactions: transactionResult.results ?? []
+  };
 }
 
 export async function purchaseProduct(

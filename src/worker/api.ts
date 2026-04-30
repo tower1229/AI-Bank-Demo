@@ -6,6 +6,7 @@ import {
   deleteCustomerDemoData,
   getCustomerPortfolio,
   getOnboardingApplication,
+  getProductPortfolio,
   listAuditLogs,
   listOnboardingApplications,
   listPaymentInstructions,
@@ -232,6 +233,19 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
       });
     }
 
+    const productDetailMatch = url.pathname.match(/^\/api\/products\/([^/]+)$/);
+    if (productDetailMatch) {
+      if (request.method !== "GET") {
+        return methodNotAllowed(request.method);
+      }
+
+      return json({
+        ok: true,
+        data: await getProductPortfolio(env.DB, productDetailMatch[1]),
+        displayMessage: "Product details loaded."
+      });
+    }
+
     if (request.method === "POST" && url.pathname === "/api/product-purchases") {
       const body = await readJson<PurchaseProductInput>(request);
       const result = await purchaseProduct(env.DB, body, {
@@ -270,7 +284,8 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
         Boolean(onboardingApproveMatch) ||
         Boolean(onboardingRejectMatch) ||
         Boolean(customerMatch) ||
-        Boolean(portfolioMatch);
+        Boolean(portfolioMatch) ||
+        Boolean(productDetailMatch);
 
       if (supportedPath) {
         return methodNotAllowed(request.method);

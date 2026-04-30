@@ -17,7 +17,7 @@ import { AuditPage } from "./pages/AuditPage";
 import { ClientBookPage, ClientPortfolioPage } from "./pages/ClientBookPage";
 import { ClientLifecyclePage, NewClientApplicationPage, OnboardingApplicationDetailPage } from "./pages/ClientLifecyclePage";
 import { DashboardPage } from "./pages/DashboardPage";
-import { InvestmentOrderEntryPage, InvestmentOrdersPage } from "./pages/InvestmentOrdersPage";
+import { InvestmentOrderEntryPage, InvestmentOrdersPage, ProductDetailPage } from "./pages/InvestmentOrdersPage";
 import { PaymentInstructionPage, PaymentsPage } from "./pages/PaymentsPage";
 import type { AppData, LoadState } from "./types";
 
@@ -135,6 +135,7 @@ export default function App() {
         <Route path="/payments/new" element={<PaymentInstructionPage customers={data.customers} runAction={runAction} />} />
         <Route path="/investment-orders" element={<InvestmentOrdersPage products={data.products} />} />
         <Route path="/investment-orders/new" element={<InvestmentOrderEntryPage customers={data.customers} products={data.products} runAction={runAction} />} />
+        <Route path="/investment-orders/:productId" element={<ProductDetailPage />} />
         <Route path="/audit-log" element={<AuditPage auditLogs={data.auditLogs} />} />
         <Route path="/onboarding" element={<Navigate to="/client-lifecycle" replace />} />
         <Route path="/customers" element={<Navigate to="/client-book" replace />} />
