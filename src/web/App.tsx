@@ -67,7 +67,7 @@ export default function App() {
 
   useEffect(() => {
     refresh();
-  }, []);
+  }, [location.pathname]);
 
   const statusLabel = useMemo(() => {
     if (state === "loading") {
