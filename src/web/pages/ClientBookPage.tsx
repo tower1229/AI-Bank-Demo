@@ -188,9 +188,11 @@ export function ClientPortfolioPage({ runAction }: { runAction: RunAction }) {
             emptyText="No holdings yet."
           />
           <MiniTable
-            columns={["Transaction", "Amount", "Date"]}
+            columns={["Transaction", "Target", "Source", "Amount", "Date"]}
             rows={portfolio.recentTransactions.map((transaction) => [
               transaction.transactionType.replaceAll("_", " "),
+              transaction.targetName ?? "-",
+              transaction.source === "telegram_openclaw" ? "tg" : transaction.source === "manual_web" ? "web" : transaction.source,
               formatUsd(transaction.amountCents),
               formatTime(transaction.createdAt)
             ])}

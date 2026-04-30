@@ -162,6 +162,7 @@ export interface TransactionDetail {
   memo: string | null;
   source: OperationSource;
   createdAt: string;
+  targetName?: string | null;
 }
 
 export interface CustomerPortfolio {
@@ -859,8 +860,24 @@ export async function getCustomerPortfolio(db: D1Database, customerId: string): 
           t.currency,
           t.memo,
           t.source,
-          t.created_at AS createdAt
+          t.created_at AS createdAt,
+          CASE
+            WHEN t.transaction_type = 'product_purchase' THEN p.name
+            WHEN t.transaction_type = 'internal_transfer'
+              AND t.to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+              AND (t.customer_id IS NULL OR t.customer_id <> ?)
+              THEN fc.display_name
+            WHEN t.transaction_type = 'internal_transfer'
+              AND t.from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+              THEN tc.display_name
+            ELSE NULL
+          END AS targetName
         FROM transactions t
+        LEFT JOIN products p ON p.id = t.product_id
+        LEFT JOIN accounts fa ON fa.id = t.from_account_id
+        LEFT JOIN accounts ta ON ta.id = t.to_account_id
+        LEFT JOIN customers fc ON fc.id = fa.customer_id
+        LEFT JOIN customers tc ON tc.id = ta.customer_id
         WHERE t.customer_id = ?
           OR t.from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
           OR t.to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
@@ -868,7 +885,7 @@ export async function getCustomerPortfolio(db: D1Database, customerId: string): 
         ORDER BY t.created_at DESC
         LIMIT 20`
       )
-      .bind(customerId, customerId, customerId, customerId, customerId, customerId, customerId)
+      .bind(customerId, customerId, customerId, customerId, customerId, customerId, customerId, customerId, customerId, customerId)
       .all<TransactionDetail>()
   ]);
 
