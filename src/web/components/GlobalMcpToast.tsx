@@ -71,16 +71,15 @@ export function GlobalMcpToast() {
         leaveTo="opacity-0"
       >
         <div
-          className="pointer-events-auto bg-white border border-slate-200 shadow-2xl rounded-xl p-4 cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
+          className="pointer-events-auto relative cursor-pointer overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-2xl transition-shadow hover:shadow-lg"
           onClick={handleClick}
         >
-          {/* Accent border top */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
           
           <div className="flex items-start justify-between">
-            <div className="flex gap-3">
-              <div className="mt-0.5 flex-shrink-0 bg-blue-50 text-blue-600 rounded-full p-2 border border-blue-100">
-                <MessageSquareDot className="w-5 h-5" />
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-blue-100 bg-blue-50 text-blue-600">
+                <MessageSquareDot className="h-5 w-5" />
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-slate-900">Telegram MCP Action</h4>

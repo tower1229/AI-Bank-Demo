@@ -46,8 +46,8 @@ export function PaymentsPage({ paymentInstructions }: { paymentInstructions: Pay
                     <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
                   </td>
                   <td className="px-4 py-4 text-sm font-medium text-gray-900">{shortId(payment.id)}</td>
-                  <td className="px-4 py-4 text-sm text-gray-600">{payment.fromAccountNumber ?? "-"}</td>
-                  <td className="px-4 py-4 text-sm text-gray-600">{payment.toAccountNumber ?? "-"}</td>
+                  <td className="px-4 py-4 text-sm text-gray-600">{payment.fromCustomerName ?? "-"}</td>
+                  <td className="px-4 py-4 text-sm text-gray-600">{payment.toCustomerName ?? "-"}</td>
                   <td className="px-4 py-4 text-sm font-semibold text-gray-900">{formatUsd(payment.amountCents)}</td>
                   <td className="px-4 py-4">
                     <StatusBadge value={payment.status} />

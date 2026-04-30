@@ -32,6 +32,8 @@ describe("worker API smoke", () => {
     expect(body.data).toEqual([
       expect.objectContaining({
         id: "tx-smoke-transfer",
+        fromCustomerName: "Zhang San",
+        toCustomerName: "Li Si",
         fromAccountNumber: "PB-USD-1001",
         toAccountNumber: "PB-USD-2002",
         amountCents: 2500000
@@ -98,6 +100,23 @@ describe("worker API smoke", () => {
       }
     });
     expect(body.displayMessage).toContain("demo client data was deleted");
+  });
+
+  it("includes received transfers in customer portfolio activity", async () => {
+    const response = await handleApi(new Request("http://local.test/api/customers/customer-smoke/portfolio"), newEnv());
+    const body = (await response.json()) as JsonObject;
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.data.recentTransactions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "tx-smoke-received",
+          transactionType: "received_transfer",
+          amountCents: 2500000
+        })
+      ])
+    );
   });
 
   it("resets demo data to seed state", async () => {
@@ -283,12 +302,30 @@ function query(sql: string, db: SmokeD1, args: unknown[] = []) {
       return null;
     },
     all: async () => {
-      if (sql.includes("FROM transactions t") && sql.includes("internal_transfer")) {
+      if (sql.includes("CASE") && sql.includes("received_transfer")) {
+        return {
+          results: [
+            {
+              id: "tx-smoke-received",
+              transactionType: "received_transfer",
+              amountCents: 2500000,
+              currency: "USD",
+              memo: "Smoke inbound transfer",
+              source: "manual_web",
+              createdAt: "2026-04-29T00:00:00.000Z"
+            }
+          ]
+        };
+      }
+
+      if (sql.includes("FROM transactions t") && sql.includes("fa.account_number")) {
         return {
           results: [
             {
               id: "tx-smoke-transfer",
               status: "posted",
+              fromCustomerName: "Zhang San",
+              toCustomerName: "Li Si",
               fromAccountNumber: "PB-USD-1001",
               toAccountNumber: "PB-USD-2002",
               amountCents: 2500000,

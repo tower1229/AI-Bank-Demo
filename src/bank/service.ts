@@ -229,6 +229,8 @@ export interface AuditLogEntry {
 export interface PaymentInstructionSummary {
   id: string;
   status: string;
+  fromCustomerName: string | null;
+  toCustomerName: string | null;
   fromAccountNumber: string | null;
   toAccountNumber: string | null;
   amountCents: number;
@@ -644,6 +646,8 @@ export async function listPaymentInstructions(db: D1Database, limit = 50): Promi
       `SELECT
         t.id,
         t.status,
+        fc.display_name AS fromCustomerName,
+        tc.display_name AS toCustomerName,
         fa.account_number AS fromAccountNumber,
         ta.account_number AS toAccountNumber,
         t.amount_cents AS amountCents,
@@ -655,6 +659,8 @@ export async function listPaymentInstructions(db: D1Database, limit = 50): Promi
       FROM transactions t
       LEFT JOIN accounts fa ON fa.id = t.from_account_id
       LEFT JOIN accounts ta ON ta.id = t.to_account_id
+      LEFT JOIN customers fc ON fc.id = fa.customer_id
+      LEFT JOIN customers tc ON tc.id = ta.customer_id
       WHERE t.transaction_type = 'internal_transfer'
       ORDER BY t.created_at DESC
       LIMIT ?`
@@ -838,19 +844,31 @@ export async function getCustomerPortfolio(db: D1Database, customerId: string): 
     db
       .prepare(
         `SELECT
-          id,
-          transaction_type AS transactionType,
-          amount_cents AS amountCents,
-          currency,
-          memo,
-          source,
-          created_at AS createdAt
-        FROM transactions
-        WHERE customer_id = ?
-        ORDER BY created_at DESC
+          t.id,
+          CASE
+            WHEN t.transaction_type = 'internal_transfer'
+              AND t.to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+              AND (t.customer_id IS NULL OR t.customer_id <> ?)
+              THEN 'received_transfer'
+            WHEN t.transaction_type = 'internal_transfer'
+              AND t.from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+              THEN 'sent_transfer'
+            ELSE t.transaction_type
+          END AS transactionType,
+          t.amount_cents AS amountCents,
+          t.currency,
+          t.memo,
+          t.source,
+          t.created_at AS createdAt
+        FROM transactions t
+        WHERE t.customer_id = ?
+          OR t.from_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+          OR t.to_account_id IN (SELECT id FROM accounts WHERE customer_id = ?)
+          OR t.holding_id IN (SELECT id FROM holdings WHERE customer_id = ?)
+        ORDER BY t.created_at DESC
         LIMIT 20`
       )
-      .bind(customerId)
+      .bind(customerId, customerId, customerId, customerId, customerId, customerId, customerId)
       .all<TransactionDetail>()
   ]);
 
