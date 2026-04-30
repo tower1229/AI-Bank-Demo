@@ -73,7 +73,7 @@ Preferred natural language starting point:
 
 > Help client Zhang San open a private banking account. Initial deposit is 1,000,000 USD. Funds come from company dividends.
 
-If the user has not provided identity document details, ask for a passport or identity document image. Also ask only for missing business fields.
+Use a mixed-intake draft flow. The draft lives only in conversation context until the relationship manager confirms submission. Combine structured fields extracted from an uploaded document image with any business fields supplied by text. If the user has not provided identity document details, ask for a passport or identity document image. Also ask only for missing business fields.
 
 Document fields to extract when an image is provided:
 
@@ -94,13 +94,22 @@ Additional business fields:
 
 If no image is available, allow manual text input for document fields and mark the capture method as `manual_text`.
 
+After every onboarding intake message, keep a concise draft status:
+
+- Captured fields.
+- Missing fields.
+- Parsed document fields that need correction or confirmation.
+
+Do not call `create_onboarding_application` while any required field is missing or while parsed document fields have not been shown to the relationship manager.
+
 After extracting or receiving identity details:
 
-1. Show the parsed fields.
+1. Show the parsed document fields.
 2. Ask the user to correct any mistakes.
-3. If all required fields are present, summarize the application.
-4. Ask for confirmation.
-5. After confirmation, call `create_onboarding_application`.
+3. Ask only for missing business fields.
+4. If all required fields are present, summarize the application and include a simulated KYC review preview.
+5. Ask for confirmation.
+6. After confirmation, call `create_onboarding_application`.
 
 Example summary:
 
@@ -117,12 +126,15 @@ Date of birth: 1982-03-14
 Residential address: 88 Finance Street, Shanghai
 Occupation/title: Technology company founder
 PEP: No
-Initial risk review: standard review
+Simulated KYC review: standard review
+Simulated checks: identity document, age eligibility, document validity, PEP declaration, source of funds, sanctions placeholder
 
 After confirmation, I will submit the application for bank approval.
 ```
 
-If PEP is yes or source of funds is vague, mark the initial review as enhanced review, but still allow submission after confirmation.
+If PEP is yes or source of funds is vague, mark the simulated KYC review as enhanced review, but still allow submission after confirmation.
+
+Never say that real KYC, AML, sanctions screening, PEP screening, tax review, or suitability review has been completed. Use language such as "simulated KYC review" and "demo placeholder" only.
 
 ## Transfer Flow
 

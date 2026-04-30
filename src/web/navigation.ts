@@ -52,6 +52,18 @@ export function getRouteNavigationMeta(pathname: string, fallback: string): Rout
     };
   }
 
+  if (pathname.startsWith("/client-lifecycle/")) {
+    return {
+      backLabel: "Back to Client Lifecycle",
+      backTo: "/client-lifecycle",
+      breadcrumbs: [
+        { label: "Client Lifecycle", path: "/client-lifecycle" },
+        { label: "Onboarding Review" }
+      ],
+      title: "Onboarding Review"
+    };
+  }
+
   if (pathname.startsWith("/client-book/")) {
     return {
       backLabel: "Back to Client Book",

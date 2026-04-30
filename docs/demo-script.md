@@ -36,7 +36,7 @@
 
 ### 证件图生成提示词模板
 
-生成每张身份资料扫描图时使用同一类提示词。除非演示脚本需要固定客户名，否则让模型自行生成虚构字段：
+本仓库只保存提示词和文件名约定，不提交生成后的证件图片。生成每张身份资料扫描图时使用同一类提示词。除非演示脚本需要固定客户名，否则让模型自行生成虚构字段：
 
 ```text
 Generate a highly realistic flatbed scan of a fictional passport data page for a non-existent country called "Republic of Demo". It is designed as a movie prop for a software demonstration. 
@@ -114,8 +114,9 @@ Use this exact Name: <SCRIPT_CUSTOMER_NAME>. Randomly generate the other fields 
    - Source of Funds: Investment income and company dividends
    - PEP: No
 6. 提交前展示确认弹窗。
-7. 提交后在申请详情页批准开户。
-8. 展示系统创建了客户、账户、首笔入金交易和审计记录。
+7. 提交后进入申请详情页，展示 applicant profile、simulated KYC checklist、review reasons 和 submission metadata。
+8. 在申请详情页批准开户。
+9. 展示系统创建了客户、账户、首笔入金交易和审计记录。
 
 ## 第二段：AI 辅助开户
 
@@ -129,6 +130,7 @@ Telegram 输入：
 
 - 不直接提交申请。
 - 要求上传护照或身份证件图片。
+- 建立对话内资料草稿，并展示 captured / missing / needs confirmation 的简短状态。
 - 只追问缺少的少量业务字段：
   - 居住地址。
   - 职业/职位。
@@ -156,8 +158,16 @@ chen-ming-kyc-demo.png
 
 - 识别或接收证件字段。
 - 展示解析结果，让用户确认或纠错。
-- 复述开户申请摘要。
+- 如果证件图字段和文字字段都完整，复述完整开户申请摘要。
+- 展示 simulated KYC review preview：
+  - identity document capture。
+  - age eligibility。
+  - document validity。
+  - PEP declaration。
+  - source of funds。
+  - sanctions screening placeholder。
 - 明确说明“确认后将提交开户申请，仍需后台批准后才会生成账户”。
+- 不声称真实 KYC、AML、制裁筛查或 PEP 筛查已经完成。
 
 确认话术：
 
@@ -168,9 +178,10 @@ chen-ming-kyc-demo.png
 预期结果：
 
 - AI 调用 `create_onboarding_application`。
-- Telegram 返回申请编号和待审批状态。
+- Telegram 返回申请编号、待审批状态和 standard/enhanced simulated review。
 - 后台 Onboarding 页面出现 pending application。
-- 在后台批准该申请。
+- 点击进入后台申请详情页，展示结构化证件字段、仿真 KYC checklist、submission metadata。
+- 在后台申请详情页批准该申请。
 - 系统生成客户、账户、首笔入金交易和审计记录。
 
 ## 第三段：AI 辅助转账
@@ -243,6 +254,7 @@ Telegram 输入：
 
 - AI 要求提供证件图片或手动证件字段。
 - AI 追问首笔入金、资金来源、地址、职业/职位、是否 PEP。
+- AI 展示资料草稿状态，区分已取得资料和待补充资料。
 - 在资料完整并确认前，不调用开户工具。
 
 ### 未成年开户阻断
@@ -268,7 +280,7 @@ minor-client-kyc-demo.png
 预期行为：
 
 - AI 或服务端识别出生日期显示未满 18 岁。
-- 系统阻断提交。
+- 系统阻断提交，不创建 pending application。
 - 回复说明当前 demo 不允许未成年人开户。
 
 ### 余额不足转账
@@ -322,8 +334,8 @@ pep-client-kyc-demo.png
 预期行为：
 
 - AI 解析证件并复述开户摘要。
-- 风险初评标记为 enhanced review。
-- 允许提交开户申请，但后台应显示增强审查状态。
+- simulated KYC review preview 标记为 enhanced review。
+- 允许提交开户申请，但后台详情页应显示 enhanced review、PEP review reason 和 checklist。
 
 ## 收尾讲解
 

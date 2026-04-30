@@ -2,6 +2,15 @@ import type { Currency, RiskLevel } from "./types";
 
 export type OperationSource = "manual_web" | "telegram_openclaw";
 export type DocumentCaptureMethod = "image_parsed" | "manual_text" | "manual_upload";
+export type KycReviewStatus = "standard_review" | "enhanced_review";
+export type KycCheckStatus = "pass" | "review" | "fail";
+
+export interface SimulatedKycCheck {
+  key: string;
+  label: string;
+  status: KycCheckStatus;
+  detail: string;
+}
 
 export interface OperationContext {
   source: OperationSource;
@@ -76,6 +85,10 @@ export interface OnboardingApplication {
   sourceOfFunds: string;
   isPep: number;
   initialReview: string;
+  kycStatus: KycReviewStatus;
+  kycSummary: string | null;
+  kycChecks: SimulatedKycCheck[];
+  reviewReasons: string[];
   submittedSource: OperationSource;
   submittedBy: string;
   originalUserText: string | null;
@@ -217,6 +230,18 @@ type ProductRow = {
   status: string;
 };
 
+type OnboardingApplicationRow = Omit<OnboardingApplication, "kycChecks" | "reviewReasons"> & {
+  kycChecksJson: string | null;
+  reviewReasonsJson: string | null;
+};
+
+interface SimulatedKycReview {
+  status: KycReviewStatus;
+  summary: string;
+  checks: SimulatedKycCheck[];
+  reviewReasons: string[];
+}
+
 const VAGUE_SOURCE_VALUES = new Set(["funds", "savings", "income", "business", "investment", "money"]);
 
 export async function createOnboardingApplication(
@@ -251,10 +276,12 @@ export async function createOnboardingApplication(
     throw new BankServiceError("DOCUMENT_EXPIRED", "The identity document is expired.");
   }
 
+  const kycReview = createSimulatedKycReview(input);
   const now = new Date().toISOString();
   const id = makeId("app");
-  const initialReview = input.isPep || isVagueSourceOfFunds(input.sourceOfFunds) ? "enhanced_review" : "standard_review";
-  const displayMessage = `Onboarding application ${formatApplicationRef(id, now)} has been submitted and is pending approval.`;
+  const initialReview = kycReview.status;
+  const reviewLabel = initialReview.replaceAll("_", " ");
+  const displayMessage = `Onboarding application ${formatApplicationRef(id, now)} has been submitted and is pending approval with ${reviewLabel}.`;
 
   await db
     .prepare(
@@ -262,11 +289,12 @@ export async function createOnboardingApplication(
         id, status, customer_name, document_capture_method, document_provided,
         document_type, document_number, document_expiry_date, date_of_birth,
         nationality, residential_address, occupation_title, initial_deposit_cents,
-        currency, source_of_funds, is_pep, initial_review, submitted_source,
+        currency, source_of_funds, is_pep, initial_review, kyc_status,
+        kyc_summary, kyc_checks_json, review_reasons_json, submitted_source,
         submitted_by, original_user_text, structured_params_json, confirmation_text,
         approved_by, approved_at, created_customer_id, created_account_id,
         created_at, updated_at
-      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
+      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
     )
     .bind(
       id,
@@ -285,6 +313,10 @@ export async function createOnboardingApplication(
       input.sourceOfFunds.trim(),
       input.isPep ? 1 : 0,
       initialReview,
+      kycReview.status,
+      kycReview.summary,
+      JSON.stringify(kycReview.checks),
+      JSON.stringify(kycReview.reviewReasons),
       context.source,
       context.operatorId,
       context.originalUserText ?? null,
@@ -411,9 +443,9 @@ export async function listOnboardingApplications(db: D1Database): Promise<Onboar
       FROM onboarding_applications
       ORDER BY created_at DESC`
     )
-    .all<OnboardingApplication>();
+    .all<OnboardingApplicationRow>();
 
-  return result.results ?? [];
+  return (result.results ?? []).map(mapOnboardingApplication);
 }
 
 export async function getOnboardingApplication(db: D1Database, id: string): Promise<OnboardingApplication> {
@@ -424,13 +456,13 @@ export async function getOnboardingApplication(db: D1Database, id: string): Prom
       WHERE id = ?`
     )
     .bind(id)
-    .first<OnboardingApplication>();
+    .first<OnboardingApplicationRow>();
 
   if (!row) {
     throw new BankServiceError("APPLICATION_NOT_FOUND", "Onboarding application was not found.", 404);
   }
 
-  return row;
+  return mapOnboardingApplication(row);
 }
 
 export async function searchCustomers(db: D1Database, query = ""): Promise<CustomerSearchResult[]> {
@@ -813,6 +845,10 @@ function onboardingSelectColumns(): string {
     source_of_funds AS sourceOfFunds,
     is_pep AS isPep,
     initial_review AS initialReview,
+    kyc_status AS kycStatus,
+    kyc_summary AS kycSummary,
+    kyc_checks_json AS kycChecksJson,
+    review_reasons_json AS reviewReasonsJson,
     submitted_source AS submittedSource,
     submitted_by AS submittedBy,
     original_user_text AS originalUserText,
@@ -823,6 +859,130 @@ function onboardingSelectColumns(): string {
     created_account_id AS createdAccountId,
     created_at AS createdAt,
     updated_at AS updatedAt`;
+}
+
+function createSimulatedKycReview(input: CreateOnboardingApplicationInput): SimulatedKycReview {
+  const reviewReasons: string[] = [];
+  const checks: SimulatedKycCheck[] = [];
+
+  checks.push({
+    key: "identity_document",
+    label: "Identity document capture",
+    status: input.documentProvided || Boolean(input.documentNumber) ? "pass" : "fail",
+    detail: input.documentCaptureMethod === "image_parsed"
+      ? "Structured identity fields were parsed from an uploaded demo document image."
+      : "Structured identity fields were supplied manually for the demo record."
+  });
+
+  if (input.dateOfBirth) {
+    checks.push({
+      key: "age_eligibility",
+      label: "Age eligibility",
+      status: "pass",
+      detail: "Date of birth indicates the applicant is at least 18 years old."
+    });
+  } else {
+    reviewReasons.push("Date of birth was not supplied and should be verified during bank approval.");
+    checks.push({
+      key: "age_eligibility",
+      label: "Age eligibility",
+      status: "review",
+      detail: "Date of birth was not supplied; bank approval should verify age eligibility."
+    });
+  }
+
+  if (input.documentExpiryDate) {
+    checks.push({
+      key: "document_validity",
+      label: "Document validity",
+      status: "pass",
+      detail: "Document expiry date is in the future."
+    });
+  } else {
+    reviewReasons.push("Document expiry date was not supplied and should be checked during approval.");
+    checks.push({
+      key: "document_validity",
+      label: "Document validity",
+      status: "review",
+      detail: "Document expiry date was not supplied; bank approval should verify validity."
+    });
+  }
+
+  if (input.isPep) {
+    reviewReasons.push("Applicant was declared as PEP.");
+    checks.push({
+      key: "pep_declaration",
+      label: "PEP declaration",
+      status: "review",
+      detail: "PEP was declared; route to enhanced simulated review."
+    });
+  } else {
+    checks.push({
+      key: "pep_declaration",
+      label: "PEP declaration",
+      status: "pass",
+      detail: "Relationship manager declared the applicant is not a PEP."
+    });
+  }
+
+  if (isVagueSourceOfFunds(input.sourceOfFunds)) {
+    reviewReasons.push("Source of funds is too vague for standard review.");
+    checks.push({
+      key: "source_of_funds",
+      label: "Source of funds",
+      status: "review",
+      detail: "Source of funds needs a more specific explanation before approval."
+    });
+  } else {
+    checks.push({
+      key: "source_of_funds",
+      label: "Source of funds",
+      status: "pass",
+      detail: "Source of funds is specific enough for the demo intake."
+    });
+  }
+
+  checks.push({
+    key: "sanctions_placeholder",
+    label: "Sanctions screening placeholder",
+    status: "pass",
+    detail: "No real sanctions screening is performed; this is a simulated demo placeholder only."
+  });
+
+  const status: KycReviewStatus = checks.some((check) => check.status === "review") ? "enhanced_review" : "standard_review";
+  const summary = status === "enhanced_review"
+    ? "Simulated KYC review requires enhanced bank-side review before approval."
+    : "Simulated KYC review is standard and ready for bank-side approval.";
+
+  return {
+    status,
+    summary,
+    checks,
+    reviewReasons
+  };
+}
+
+function mapOnboardingApplication(row: OnboardingApplicationRow): OnboardingApplication {
+  const { kycChecksJson, reviewReasonsJson, ...application } = row;
+
+  return {
+    ...application,
+    kycStatus: row.kycStatus ?? (row.initialReview as KycReviewStatus),
+    kycSummary: row.kycSummary,
+    kycChecks: parseJsonArray<SimulatedKycCheck>(kycChecksJson),
+    reviewReasons: parseJsonArray<string>(reviewReasonsJson)
+  };
+}
+
+function parseJsonArray<T>(value: string | null | undefined): T[] {
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed as T[] : [];
+  } catch {
+    return [];
+  }
 }
 
 async function getAccountByIdentifier(db: D1Database, id?: string, accountNumber?: string, customerName?: string): Promise<AccountRow> {

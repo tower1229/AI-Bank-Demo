@@ -31,7 +31,7 @@ const mcpContext: OperationContext = {
 const tools = [
   {
     name: "create_onboarding_application",
-    description: "Submit a private banking onboarding application for later web-console approval.",
+    description: "Submit a confirmed private banking onboarding application with structured identity fields and simulated KYC review for later web-console approval.",
     inputSchema: {
       type: "object",
       required: [

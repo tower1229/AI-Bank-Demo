@@ -8,7 +8,7 @@ import { fetchJson } from "./lib/api";
 import { getActiveNavigationItem, getRouteNavigationMeta } from "./navigation";
 import { AuditPage } from "./pages/AuditPage";
 import { ClientBookPage, ClientPortfolioPage } from "./pages/ClientBookPage";
-import { ClientLifecyclePage, NewClientApplicationPage } from "./pages/ClientLifecyclePage";
+import { ClientLifecyclePage, NewClientApplicationPage, OnboardingApplicationDetailPage } from "./pages/ClientLifecyclePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { InvestmentOrderEntryPage, InvestmentOrdersPage } from "./pages/InvestmentOrdersPage";
 import { PaymentInstructionPage, PaymentsPage } from "./pages/PaymentsPage";
@@ -103,6 +103,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage data={data} />} />
         <Route path="/client-lifecycle" element={<ClientLifecyclePage applications={data.applications} runAction={runAction} />} />
         <Route path="/client-lifecycle/new" element={<NewClientApplicationPage runAction={runAction} />} />
+        <Route path="/client-lifecycle/:applicationId" element={<OnboardingApplicationDetailPage applications={data.applications} runAction={runAction} />} />
         <Route path="/client-book" element={<ClientBookPage initialCustomers={data.customers} />} />
         <Route path="/client-book/:customerId" element={<ClientPortfolioPage />} />
         <Route path="/payments" element={<PaymentsPage paymentInstructions={data.paymentInstructions} />} />

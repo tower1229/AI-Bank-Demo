@@ -76,7 +76,43 @@ describe("bank service validation", () => {
     }, context);
 
     expect(result.application.initialReview).toBe("enhanced_review");
+    expect(result.application.kycStatus).toBe("enhanced_review");
+    expect(result.application.reviewReasons).toContain("Applicant was declared as PEP.");
+    expect(result.application.kycChecks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "pep_declaration",
+          status: "review"
+        })
+      ])
+    );
     expect(result.displayMessage).toContain("pending approval");
+  });
+
+  it("marks complete non-PEP onboarding as standard review", async () => {
+    const db = new OnboardingFakeD1();
+    const result = await createOnboardingApplication(db as unknown as D1Database, {
+      confirmed: true,
+      customerName: "Chen Ming",
+      documentCaptureMethod: "image_parsed",
+      documentProvided: true,
+      documentType: "passport",
+      documentNumber: "DEM123456",
+      dateOfBirth: "1986-05-12",
+      documentExpiryDate: "2035-01-01",
+      nationality: "Demo Republic",
+      residentialAddress: "1 Demo Road",
+      occupationTitle: "Family office principal",
+      initialDepositCents: 750_000_00,
+      currency: "USD",
+      sourceOfFunds: "Company dividends",
+      isPep: false
+    }, context);
+
+    expect(result.application.initialReview).toBe("standard_review");
+    expect(result.application.kycStatus).toBe("standard_review");
+    expect(result.application.reviewReasons).toEqual([]);
+    expect(result.application.kycChecks.every((check) => check.status === "pass")).toBe(true);
   });
 
   it("rejects insufficient transfer balance", async () => {
@@ -106,6 +142,28 @@ describe("bank service validation", () => {
       }, context)
     ).rejects.toMatchObject({ errorCode: "RISK_MISMATCH_ACK_REQUIRED" });
   });
+
+  it("blocks expired identity documents before writing", async () => {
+    await expect(
+      createOnboardingApplication({} as D1Database, {
+        confirmed: true,
+        customerName: "Expired Client",
+        documentCaptureMethod: "manual_text",
+        documentProvided: true,
+        documentType: "passport",
+        documentNumber: "EXP12345",
+        dateOfBirth: "1980-01-01",
+        documentExpiryDate: "2020-01-01",
+        nationality: "Demo Republic",
+        residentialAddress: "1 Old Road",
+        occupationTitle: "Investor",
+        initialDepositCents: 500_000_00,
+        currency: "USD",
+        sourceOfFunds: "Company dividends",
+        isPep: false
+      }, context)
+    ).rejects.toMatchObject({ errorCode: "DOCUMENT_EXPIRED" });
+  });
 });
 
 class OnboardingFakeD1 {
@@ -134,16 +192,20 @@ class OnboardingFakeD1 {
               sourceOfFunds: args[13],
               isPep: args[14],
               initialReview: args[15],
-              submittedSource: args[16],
-              submittedBy: args[17],
-              originalUserText: args[18],
-              confirmationText: args[20],
+              kycStatus: args[16],
+              kycSummary: args[17],
+              kycChecksJson: args[18],
+              reviewReasonsJson: args[19],
+              submittedSource: args[20],
+              submittedBy: args[21],
+              originalUserText: args[22],
+              confirmationText: args[24],
               approvedBy: null,
               approvedAt: null,
               createdCustomerId: null,
               createdAccountId: null,
-              createdAt: args[21],
-              updatedAt: args[22]
+              createdAt: args[25],
+              updatedAt: args[26]
             };
           }
           return { success: true };

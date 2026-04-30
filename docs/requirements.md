@@ -80,7 +80,7 @@ The initial deposit amount is required and is credited automatically at approval
 
 ### Onboarding Data Collection
 
-The onboarding demo should use an identity-document-first flow.
+The onboarding demo should use an identity-document-first mixed-intake flow. OpenClaw keeps a conversation-local draft, merges fields parsed from an uploaded document image with fields supplied by text, asks only for missing fields, and submits only after the relationship manager confirms the final summary.
 
 Fields parsed from a passport or identity document image when available:
 
@@ -106,14 +106,17 @@ Fallback path:
 
 The bank system does not store original document images in v1. It stores only structured fields and whether a document was provided.
 
+The bank system stores the final confirmed structured application only. It does not store partial Telegram/OpenClaw intake drafts.
+
 ### Onboarding Validation
 
 OpenClaw handles conversational validation:
 
 - Ask only for missing fields.
 - Prefer asking for a document upload plus the few missing business fields.
+- Maintain a concise captured/missing/correction-needed draft status during intake.
 - Show parsed document fields and allow correction.
-- Summarize the application and require confirmation before calling MCP.
+- Summarize the application, include a simulated KYC review preview, and require confirmation before calling MCP.
 
 The bank service layer enforces non-bypassable validation:
 
@@ -125,6 +128,17 @@ The bank service layer enforces non-bypassable validation:
 - Currency must be USD.
 - PEP or vague source of funds marks the application as enhanced review, but does not block submission.
 - Write operations without `confirmed: true` are rejected.
+
+The bank service layer also generates a simulated KYC review package for every submitted application:
+
+- Identity document capture.
+- Age eligibility.
+- Document validity.
+- PEP declaration.
+- Source of funds.
+- Sanctions screening placeholder.
+
+The simulated KYC review is stored as structured check results and review reasons. It is for demo workflow realism only and must not be described as real KYC, AML, sanctions, tax, PEP, or suitability screening.
 
 ### Transfer
 
@@ -181,6 +195,7 @@ Required pages or workspaces:
 
 - Dashboard: customer count, total balances, product holdings, pending onboarding applications, recent activity.
 - Onboarding: create application, list applications, view detail, approve application.
+- Onboarding application detail: show applicant profile, document fields, simulated KYC checklist, review reasons, submission source, original user text, and confirmation text.
 - Customers: list customers, view accounts, balances, holdings, and transactions.
 - Transfers: manually create internal transfer and view transfer history.
 - Products: list products and manually purchase for a customer account.

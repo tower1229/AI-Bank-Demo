@@ -5,10 +5,12 @@ import { handleMcp } from "./mcp";
 type JsonObject = Record<string, any>;
 
 class SmokeD1 {
+  application: JsonObject | null = null;
+
   prepare(sql: string) {
     return {
-      ...query(sql),
-      bind: () => query(sql)
+      ...query(sql, this),
+      bind: (...args: unknown[]) => query(sql, this, args)
     };
   }
 }
@@ -137,13 +139,74 @@ describe("MCP smoke", () => {
       displayMessage: "This write operation requires confirmed: true."
     });
   });
+
+  it("returns simulated KYC fields for onboarding tool calls", async () => {
+    const response = await handleMcp(
+      new Request("http://local.test/mcp", {
+        method: "POST",
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "onboarding-1",
+          method: "tools/call",
+          params: {
+            name: "create_onboarding_application",
+            arguments: {
+              confirmed: true,
+              customerName: "Chen Ming",
+              documentCaptureMethod: "image_parsed",
+              documentProvided: true,
+              documentType: "passport",
+              documentNumber: "DEM123456",
+              documentExpiryDate: "2035-01-01",
+              dateOfBirth: "1986-05-12",
+              nationality: "Demo Republic",
+              residentialAddress: "1 Demo Road, Hong Kong",
+              occupationTitle: "Family office principal",
+              initialDepositCents: 75000000,
+              currency: "USD",
+              sourceOfFunds: "Company dividends",
+              isPep: false,
+              originalUserText: "Open an account for Chen Ming.",
+              confirmationText: "Confirmed and submit."
+            }
+          }
+        })
+      }),
+      newEnv()
+    );
+    const body = (await response.json()) as JsonObject;
+
+    expect(response.status).toBe(200);
+    expect(body.result.structuredContent.ok).toBe(true);
+    expect(body.result.structuredContent.data).toMatchObject({
+      customerName: "Chen Ming",
+      kycStatus: "standard_review",
+      reviewReasons: []
+    });
+    expect(body.result.structuredContent.data.kycChecks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "sanctions_placeholder",
+          status: "pass"
+        })
+      ])
+    );
+  });
 });
 
-function query(sql: string) {
+function newEnv() {
+  return { DB: new SmokeD1() as unknown as D1Database } as Env;
+}
+
+function query(sql: string, db: SmokeD1, args: unknown[] = []) {
   return {
     first: async () => {
       if (sql.includes("SELECT 1")) {
         return {};
+      }
+
+      if (sql.includes("FROM onboarding_applications")) {
+        return db.application;
       }
 
       return null;
@@ -187,6 +250,44 @@ function query(sql: string) {
 
       return { results: [] };
     },
-    run: async () => ({ success: true })
+    run: async () => {
+      if (sql.includes("INSERT INTO onboarding_applications")) {
+        db.application = {
+          id: args[0],
+          status: "pending_approval",
+          customerName: args[1],
+          documentCaptureMethod: args[2],
+          documentProvided: args[3],
+          documentType: args[4],
+          documentNumber: args[5],
+          documentExpiryDate: args[6],
+          dateOfBirth: args[7],
+          nationality: args[8],
+          residentialAddress: args[9],
+          occupationTitle: args[10],
+          initialDepositCents: args[11],
+          currency: args[12],
+          sourceOfFunds: args[13],
+          isPep: args[14],
+          initialReview: args[15],
+          kycStatus: args[16],
+          kycSummary: args[17],
+          kycChecksJson: args[18],
+          reviewReasonsJson: args[19],
+          submittedSource: args[20],
+          submittedBy: args[21],
+          originalUserText: args[22],
+          confirmationText: args[24],
+          approvedBy: null,
+          approvedAt: null,
+          createdCustomerId: null,
+          createdAccountId: null,
+          createdAt: args[25],
+          updatedAt: args[26]
+        };
+      }
+
+      return { success: true };
+    }
   };
 }

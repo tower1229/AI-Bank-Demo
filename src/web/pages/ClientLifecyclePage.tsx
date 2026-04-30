@@ -1,11 +1,11 @@
-import { FormEvent, useState } from "react";
-import { Plus } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
-import type { OnboardingApplication } from "../../bank/service";
+import { FormEvent, useEffect, useState } from "react";
+import { AlertTriangle, CheckCircle2, Plus, XCircle } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import type { KycCheckStatus, OnboardingApplication } from "../../bank/service";
 import { SectionHeader, TextInput } from "../components/common";
 import { useConfirm } from "../hooks/useConfirm";
 import { formatTime, formatUsd, usdToCents } from "../lib/format";
-import { postJson } from "../lib/api";
+import { fetchJson, postJson } from "../lib/api";
 import type { RunAction } from "../types";
 
 export function ClientLifecyclePage({
@@ -15,25 +15,6 @@ export function ClientLifecyclePage({
   applications: OnboardingApplication[];
   runAction: RunAction;
 }) {
-  const confirm = useConfirm();
-
-  async function approve(application: OnboardingApplication) {
-    const isConfirmed = await confirm({
-      title: "Approve Client Onboarding",
-      description: `Are you sure you want to approve the onboarding application for ${application.customerName}?`,
-      confirmText: "Approve"
-    });
-
-    if (!isConfirmed) return;
-
-    await runAction(async () => {
-      const response = await postJson<OnboardingApplication>(`/api/onboarding/applications/${application.id}/approve`, {
-        confirmed: true
-      });
-      return response.displayMessage ?? "Application approved.";
-    });
-  }
-
   return (
     <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -63,25 +44,23 @@ export function ClientLifecyclePage({
                 <td className="px-3 py-4 text-left">
                   <input type="checkbox" className="h-4 w-4 rounded border-gray-300" disabled />
                 </td>
-                <td className="px-3 py-4 text-sm font-medium text-gray-900">{application.customerName}</td>
+                <td className="px-3 py-4 text-sm font-medium text-gray-900">
+                  <Link className="text-violet-700 hover:text-violet-900" to={`/client-lifecycle/${application.id}`}>
+                    {application.customerName}
+                  </Link>
+                </td>
                 <td className="px-3 py-4">
                   <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 capitalize">
                     {application.status.replaceAll("_", " ")}
                   </span>
                 </td>
                 <td className="px-3 py-4 text-sm font-semibold text-gray-900">{formatUsd(application.initialDepositCents)}</td>
-                <td className="px-3 py-4 text-sm text-gray-600">{application.initialReview.replaceAll("_", " ")}</td>
+                <td className="px-3 py-4 text-sm text-gray-600">{formatReview(application.kycStatus ?? application.initialReview)}</td>
                 <td className="px-3 py-4 text-sm text-gray-500">{formatTime(application.createdAt)}</td>
                 <td className="px-3 py-4 text-right">
-                  {application.status === "pending_approval" ? (
-                    <button
-                      className="min-h-9 rounded-md border border-gray-300 bg-white px-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                      onClick={() => approve(application)}
-                      type="button"
-                    >
-                      Approve
-                    </button>
-                  ) : null}
+                  <Link className="text-sm font-semibold text-violet-700 hover:text-violet-900" to={`/client-lifecycle/${application.id}`}>
+                    Review
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -89,6 +68,171 @@ export function ClientLifecyclePage({
         </table>
       </div>
     </article>
+  );
+}
+
+export function OnboardingApplicationDetailPage({
+  applications,
+  runAction
+}: {
+  applications: OnboardingApplication[];
+  runAction: RunAction;
+}) {
+  const { applicationId } = useParams();
+  const confirm = useConfirm();
+  const [application, setApplication] = useState<OnboardingApplication | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadApplication() {
+      if (!applicationId) {
+        setError("Onboarding application id is missing.");
+        return;
+      }
+
+      const cached = applications.find((item) => item.id === applicationId);
+      if (cached) {
+        setApplication(cached);
+        setError(null);
+        return;
+      }
+
+      try {
+        const loaded = await fetchJson<OnboardingApplication>(`/api/onboarding/applications/${applicationId}`);
+        if (!cancelled) {
+          setApplication(loaded);
+          setError(null);
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setError(loadError instanceof Error ? loadError.message : "Application failed to load.");
+        }
+      }
+    }
+
+    loadApplication();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [applicationId, applications]);
+
+  async function approve() {
+    if (!application) return;
+
+    const isConfirmed = await confirm({
+      title: "Approve Client Onboarding",
+      description: `Approve the onboarding application for ${application.customerName}?`,
+      confirmText: "Approve"
+    });
+
+    if (!isConfirmed) return;
+
+    await runAction(async () => {
+      const response = await postJson<OnboardingApplication>(`/api/onboarding/applications/${application.id}/approve`, {
+        confirmed: true
+      });
+      if (response.data) setApplication(response.data);
+      return response.displayMessage ?? "Application approved.";
+    });
+  }
+
+  if (error) {
+    return <p className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">{error}</p>;
+  }
+
+  if (!application) {
+    return <p className="text-sm text-gray-500">Loading onboarding application...</p>;
+  }
+
+  return (
+    <div className="space-y-5">
+      <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <SectionHeader title={application.customerName} detail="Review applicant profile, simulated KYC checks, and source metadata before approval." />
+          {application.status === "pending_approval" ? (
+            <button
+              className="inline-flex min-h-10 items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
+              onClick={approve}
+              type="button"
+            >
+              Approve onboarding
+            </button>
+          ) : null}
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <SummaryTile label="Lifecycle status" value={formatReview(application.status)} />
+          <SummaryTile label="Simulated KYC" value={formatReview(application.kycStatus)} />
+          <SummaryTile label="Initial funding" value={formatUsd(application.initialDepositCents)} />
+        </div>
+      </article>
+
+      <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <SectionHeader title="Applicant Profile" detail="Structured data submitted from manual web entry or Telegram/OpenClaw intake." />
+          <DetailGrid
+            rows={[
+              ["Document capture", formatReview(application.documentCaptureMethod)],
+              ["Document type", application.documentType ?? "Not supplied"],
+              ["Document number", application.documentNumber ?? "Not supplied"],
+              ["Date of birth", application.dateOfBirth ?? "Not supplied"],
+              ["Document expiry", application.documentExpiryDate ?? "Not supplied"],
+              ["Nationality", application.nationality ?? "Not supplied"],
+              ["Residential address", application.residentialAddress ?? "Not supplied"],
+              ["Occupation/title", application.occupationTitle ?? "Not supplied"],
+              ["Source of funds", application.sourceOfFunds],
+              ["PEP", application.isPep ? "Yes" : "No"]
+            ]}
+          />
+        </article>
+
+        <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <SectionHeader title="Simulated KYC Review" detail={application.kycSummary ?? "Simulated review details for demo approval."} />
+          <div className="mt-5 space-y-3">
+            {application.kycChecks.map((check) => (
+              <div className="flex gap-3 border-b border-gray-100 py-3 last:border-0" key={check.key}>
+                <KycStatusIcon status={check.status} />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{check.label}</p>
+                  <p className="mt-1 text-sm text-gray-600">{check.detail}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 border-t border-gray-100 pt-4">
+            <h3 className="text-sm font-semibold text-gray-900">Review reasons</h3>
+            {application.reviewReasons.length > 0 ? (
+              <ul className="mt-2 grid gap-2">
+                {application.reviewReasons.map((reason) => (
+                  <li className="border-b border-amber-100 py-2 text-sm text-amber-800 last:border-0" key={reason}>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500">No enhanced review reasons recorded.</p>
+            )}
+          </div>
+        </article>
+      </section>
+
+      <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <SectionHeader title="Submission Metadata" detail="Operational source and confirmation record for audit review." />
+        <DetailGrid
+          rows={[
+            ["Submitted source", formatReview(application.submittedSource)],
+            ["Submitted by", application.submittedBy],
+            ["Original user text", application.originalUserText ?? "Not captured"],
+            ["Confirmation text", application.confirmationText ?? "Not captured"],
+            ["Created", formatTime(application.createdAt)],
+            ["Approved by", application.approvedBy ?? "Not approved"],
+            ["Approved at", application.approvedAt ? formatTime(application.approvedAt) : "Not approved"]
+          ]}
+        />
+      </article>
+    </div>
   );
 }
 
@@ -136,6 +280,9 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
     <article className="max-w-3xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <SectionHeader title="Applicant Profile" detail="Capture KYC, source-of-funds, and initial funding details." />
       <form className="mt-6 grid gap-4" onSubmit={submit}>
+        <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+          Document capture method: <span className="font-semibold text-gray-900">manual text entry</span>. Telegram/OpenClaw submissions may use image parsed capture.
+        </div>
         <TextInput label="Customer name" value={form.customerName} onChange={(customerName) => setForm({ ...form, customerName })} />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextInput label="Document type" value={form.documentType} onChange={(documentType) => setForm({ ...form, documentType })} />
@@ -170,6 +317,44 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
       </form>
     </article>
   );
+}
+
+function DetailGrid({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className="mt-5 grid gap-x-8 sm:grid-cols-2">
+      {rows.map(([label, value]) => (
+        <div className="border-b border-gray-100 py-3" key={label}>
+          <dt className="text-xs font-medium uppercase tracking-normal text-gray-500">{label}</dt>
+          <dd className="mt-1 break-words text-sm font-medium text-gray-900">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-medium uppercase tracking-normal text-gray-500">{label}</p>
+      <p className="mt-1 text-sm font-semibold capitalize text-gray-900">{value}</p>
+    </div>
+  );
+}
+
+function KycStatusIcon({ status }: { status: KycCheckStatus }) {
+  if (status === "pass") {
+    return <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />;
+  }
+
+  if (status === "fail") {
+    return <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />;
+  }
+
+  return <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />;
+}
+
+function formatReview(value: string) {
+  return value.replaceAll("_", " ");
 }
 
 function generateDemoApplicationProfile() {

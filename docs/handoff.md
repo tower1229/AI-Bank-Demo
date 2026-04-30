@@ -2,7 +2,7 @@
 
 ## Current Snapshot
 
-Date: 2026-04-29
+Date: 2026-04-30
 
 The project is an AI Bank Demo for showing Telegram natural language control of a simulated private banking system through OpenClaw and MCP.
 
@@ -16,6 +16,7 @@ The repository now contains a working vertical demo slice:
 - Health, seed status, dashboard, onboarding, customer, transfer, product, and audit APIs.
 - Unauthenticated demo MCP endpoint exposing business-action tools.
 - Web console for onboarding creation/approval, customer portfolios, internal transfers, product purchases, and audit review.
+- Enhanced onboarding demo flow: Telegram/OpenClaw mixed document-image/text intake, simulated KYC review package, and a web-console onboarding detail review page.
 - Worker/MCP smoke tests covering payment-instruction listing, write confirmation rejection, product listing, MCP tool discovery, and MCP rejected tool-call display messages.
 
 The browser-facing system name is now `Core Bank System`. The broader project/docs may still refer to `AI Bank Demo` as the overall demo initiative.
@@ -39,6 +40,8 @@ Full production authentication, real KYC/compliance, and real banking integratio
 - v1 supports USD only.
 - v1 supports internal transfers only.
 - Identity document images are interpreted by OpenClaw; the bank stores structured fields, not images.
+- Telegram/OpenClaw keeps partial onboarding drafts in conversation context only; the bank stores only the final confirmed structured application.
+- Submitted onboarding applications include structured simulated KYC checks and review reasons for demo review realism. This is not real KYC, AML, sanctions, tax, PEP, or suitability screening.
 - Seed data should represent a relationship manager's client book.
 
 ## Confirmed Demo Data Shape
@@ -64,6 +67,7 @@ Observed behavior:
 - `test` returned an AI Bank Demo assistant greeting.
 - A transfer request asked for payer and recipient account details instead of executing directly.
 - An onboarding request asked for identity document image/manual identity fields and minimal business fields.
+- The intended onboarding behavior is now mixed intake: merge image-parsed identity fields with text-supplied business fields, show captured/missing/correction-needed status, then show one final summary plus simulated KYC preview before calling MCP.
 
 Interpretation:
 
@@ -139,6 +143,7 @@ Browser automation note:
 - Local Worker dev was reachable at `http://127.0.0.1:8787`; API-level checks for health, dashboard, customers, and transfers succeeded.
 - Browser route smoke checks passed for dashboard, onboarding list/new, client book/detail, payments list/new, investment orders list/new, and audit log.
 - Browser workflow QA passed for onboarding submission, web approval, internal USD transfer, investment product purchase, dashboard update, customer search, and audit-log persistence.
+- Onboarding review now has a dedicated detail route at `/client-lifecycle/:applicationId`, including applicant profile, simulated KYC checklist, review reasons, source metadata, and web-only approval.
 
 Observed seed counts:
 
@@ -166,6 +171,7 @@ The repository now ignores `.env`, `.dev.vars`, and `.wrangler/`.
 1. Complete full visual browser QA against local Wrangler dev.
    - Dashboard refresh after writes.
    - Onboarding create and approve.
+   - Onboarding detail review page and simulated KYC checklist.
    - Customer portfolio details.
    - Manual transfer and product purchase.
    - Audit log entries.
