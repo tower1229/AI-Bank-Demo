@@ -18,7 +18,9 @@ AGENTS.md
 docs/requirements.md
 docs/handoff.md
 docs/setup-preparation.md
-docs/openclaw-agent-instructions.md
+docs/workspace/IDENTITY.md
+docs/workspace/AGENTS.md
+docs/workspace/TOOLS.md
 docs/demo-script.md
 docs/deployment.md
 ```
@@ -71,7 +73,7 @@ OpenClaw runs on the existing cloud server. The repo does not own that runtime c
 - Telegram account id: `ai-bank-demo`
 - Telegram DM policy: open
 - Group chat: disabled for this bot
-- Agent instruction source: `docs/openclaw-agent-instructions.md`
+- Agent instruction source: `docs/workspace/IDENTITY.md`, `docs/workspace/AGENTS.md`, and `docs/workspace/TOOLS.md`
 
 Validate on the server:
 

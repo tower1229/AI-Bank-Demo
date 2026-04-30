@@ -140,7 +140,7 @@ describe("MCP smoke", () => {
     });
   });
 
-  it("returns simulated KYC fields for onboarding tool calls", async () => {
+  it("returns KYC fields for onboarding tool calls", async () => {
     const response = await handleMcp(
       new Request("http://local.test/mcp", {
         method: "POST",
@@ -160,6 +160,14 @@ describe("MCP smoke", () => {
               documentExpiryDate: "2035-01-01",
               dateOfBirth: "1986-05-12",
               nationality: "Demo Republic",
+              addressProofProvided: true,
+              addressProofCaptureMethod: "image_parsed",
+              addressProofType: "utility bill",
+              addressProofHolderName: "Chen Ming",
+              addressProofAddress: "1 Demo Road, Hong Kong",
+              addressProofIssueDate: "2026-03-15",
+              kycEvidenceProvided: true,
+              kycEvidenceCaptureMethod: "manual_upload",
               residentialAddress: "1 Demo Road, Hong Kong",
               occupationTitle: "Family office principal",
               initialDepositCents: 75000000,
@@ -186,7 +194,7 @@ describe("MCP smoke", () => {
     expect(body.result.structuredContent.data.kycChecks).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          key: "sanctions_placeholder",
+          key: "kyc_evidence",
           status: "pass"
         })
       ])
@@ -263,27 +271,35 @@ function query(sql: string, db: SmokeD1, args: unknown[] = []) {
           documentExpiryDate: args[6],
           dateOfBirth: args[7],
           nationality: args[8],
-          residentialAddress: args[9],
-          occupationTitle: args[10],
-          initialDepositCents: args[11],
-          currency: args[12],
-          sourceOfFunds: args[13],
-          isPep: args[14],
-          initialReview: args[15],
-          kycStatus: args[16],
-          kycSummary: args[17],
-          kycChecksJson: args[18],
-          reviewReasonsJson: args[19],
-          submittedSource: args[20],
-          submittedBy: args[21],
-          originalUserText: args[22],
-          confirmationText: args[24],
+          addressProofProvided: args[9],
+          addressProofCaptureMethod: args[10],
+          addressProofType: args[11],
+          addressProofHolderName: args[12],
+          addressProofAddress: args[13],
+          addressProofIssueDate: args[14],
+          kycEvidenceProvided: args[15],
+          kycEvidenceCaptureMethod: args[16],
+          residentialAddress: args[17],
+          occupationTitle: args[18],
+          initialDepositCents: args[19],
+          currency: args[20],
+          sourceOfFunds: args[21],
+          isPep: args[22],
+          initialReview: args[23],
+          kycStatus: args[24],
+          kycSummary: args[25],
+          kycChecksJson: args[26],
+          reviewReasonsJson: args[27],
+          submittedSource: args[28],
+          submittedBy: args[29],
+          originalUserText: args[30],
+          confirmationText: args[32],
           approvedBy: null,
           approvedAt: null,
           createdCustomerId: null,
           createdAccountId: null,
-          createdAt: args[25],
-          updatedAt: args[26]
+          createdAt: args[33],
+          updatedAt: args[34]
         };
       }
 

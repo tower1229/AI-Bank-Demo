@@ -183,7 +183,9 @@ Recommended config shape:
 Copy this repo file into the agent workspace or system prompt source:
 
 ```text
-docs/openclaw-agent-instructions.md
+docs/workspace/IDENTITY.md
+docs/workspace/AGENTS.md
+docs/workspace/TOOLS.md
 ```
 
 The important behavior rules are:

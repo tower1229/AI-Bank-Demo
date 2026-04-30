@@ -80,7 +80,7 @@ The initial deposit amount is required and is credited automatically at approval
 
 ### Onboarding Data Collection
 
-The onboarding demo should use an identity-document-first mixed-intake flow. OpenClaw keeps a conversation-local draft, merges fields parsed from an uploaded document image with fields supplied by text, asks only for missing fields, and submits only after the relationship manager confirms the final summary.
+The onboarding flow should use a document-first mixed-intake flow. OpenClaw keeps a conversation-local draft, merges fields parsed from uploaded document images with fields supplied by text, asks only for missing fields, and submits only after the relationship manager confirms the final summary.
 
 Fields parsed from a passport or identity document image when available:
 
@@ -90,6 +90,13 @@ Fields parsed from a passport or identity document image when available:
 - Date of birth.
 - Nationality.
 - Document expiry date, if visible.
+
+Fields parsed from an address proof image when available:
+
+- Address proof type.
+- Holder or recipient name.
+- Residential address.
+- Issue date, statement date, or bill date, if visible.
 
 Minimal business fields still supplied by the relationship manager:
 
@@ -103,6 +110,8 @@ Fallback path:
 
 - If no image is available, the relationship manager may provide document fields by text.
 - The system records `documentCaptureMethod` as `image_parsed`, `manual_text`, or `manual_upload`.
+- The system records address proof fields and capture method the same way.
+- Before submission, the relationship manager must provide a KYC evidence image. In v1, any uploaded image satisfies this intake step.
 
 The bank system does not store original document images in v1. It stores only structured fields and whether a document was provided.
 
@@ -113,10 +122,10 @@ The bank system stores the final confirmed structured application only. It does 
 OpenClaw handles conversational validation:
 
 - Ask only for missing fields.
-- Prefer asking for a document upload plus the few missing business fields.
+- Prefer asking for passport, address proof, KYC evidence, and only the few missing business fields.
 - Maintain a concise captured/missing/correction-needed draft status during intake.
 - Show parsed document fields and allow correction.
-- Summarize the application, include a simulated KYC review preview, and require confirmation before calling MCP.
+- Summarize the application, include KYC review status, and require confirmation before calling MCP.
 
 The bank service layer enforces non-bypassable validation:
 
@@ -126,19 +135,21 @@ The bank service layer enforces non-bypassable validation:
 - Expired documents are blocked or marked invalid.
 - Initial deposit must be greater than 0.
 - Currency must be USD.
+- Address proof and KYC evidence must be present before submission.
 - PEP or vague source of funds marks the application as enhanced review, but does not block submission.
 - Write operations without `confirmed: true` are rejected.
 
-The bank service layer also generates a simulated KYC review package for every submitted application:
+The bank service layer also generates a KYC review package for every submitted application:
 
 - Identity document capture.
+- Address proof.
 - Age eligibility.
 - Document validity.
 - PEP declaration.
 - Source of funds.
-- Sanctions screening placeholder.
+- KYC evidence.
 
-The simulated KYC review is stored as structured check results and review reasons. It is for demo workflow realism only and must not be described as real KYC, AML, sanctions, tax, PEP, or suitability screening.
+The KYC review is stored as structured check results and review reasons. It is for workflow realism only and must not be described as real external KYC, AML, sanctions, tax, PEP, or suitability screening.
 
 ### Transfer
 
@@ -195,7 +206,7 @@ Required pages or workspaces:
 
 - Dashboard: customer count, total balances, product holdings, pending onboarding applications, recent activity.
 - Onboarding: create application, list applications, view detail, approve application.
-- Onboarding application detail: show applicant profile, document fields, simulated KYC checklist, review reasons, submission source, original user text, and confirmation text.
+- Onboarding application detail: show applicant profile, identity document fields, address proof fields, KYC checklist, review reasons, submission source, original user text, and confirmation text.
 - Customers: list customers, view accounts, balances, holdings, and transactions.
 - Transfers: manually create internal transfer and view transfer history.
 - Products: list products and manually purchase for a customer account.

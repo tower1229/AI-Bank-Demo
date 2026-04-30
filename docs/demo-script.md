@@ -34,6 +34,17 @@
    - 字段生成要求：模型自行生成虚构成年人身份资料；客户名为 Olivia Tan，以便匹配 PEP 场景话术。
    - 配合话术：用户补充“PEP: Yes”，系统应标记 enhanced review 但仍允许提交申请。
 
+5. `chen-ming-address-proof.png`
+   - 用途：AI 开户主流程地址证明。
+   - 类型：虚构 utility bill / bank statement。
+   - 字段生成要求：客户名为 Chen Ming，地址为 `1 Demo Road, Hong Kong`，日期为近期日期。
+   - 画面要求：字段清晰、平角扫描、无真实机构 logo、无真实地址。
+
+6. `chen-ming-kyc-evidence.png`
+   - 用途：AI 开户主流程 KYC evidence 步骤。
+   - 类型：任意虚构图片均可。
+   - 字段生成要求：不需要可识别个人信息。
+
 ### 证件图生成提示词模板
 
 本仓库只保存提示词和文件名约定，不提交生成后的证件图片。生成每张身份资料扫描图时使用同一类提示词。除非演示脚本需要固定客户名，否则让模型自行生成虚构字段：
@@ -114,7 +125,7 @@ Use this exact Name: <SCRIPT_CUSTOMER_NAME>. Randomly generate the other fields 
    - Source of Funds: Investment income and company dividends
    - PEP: No
 6. 提交前展示确认弹窗。
-7. 提交后进入申请详情页，展示 applicant profile、simulated KYC checklist、review reasons 和 submission metadata。
+7. 提交后进入申请详情页，展示 applicant profile、KYC checklist、review reasons 和 submission metadata。
 8. 在申请详情页批准开户。
 9. 展示系统创建了客户、账户、首笔入金交易和审计记录。
 
@@ -129,10 +140,9 @@ Telegram 输入：
 预期 AI 行为：
 
 - 不直接提交申请。
-- 要求上传护照或身份证件图片。
+- 要求上传护照和地址证明材料。
 - 建立对话内资料草稿，并展示 captured / missing / needs confirmation 的简短状态。
 - 只追问缺少的少量业务字段：
-  - 居住地址。
   - 职业/职位。
   - 是否 PEP。
 
@@ -142,10 +152,16 @@ Telegram 输入：
 居住地址是 1 Demo Road, Hong Kong。他是 family office principal。不是 PEP。
 ```
 
-然后上传：
+然后上传护照：
 
 ```text
 chen-ming-kyc-demo.png
+```
+
+继续上传地址证明：
+
+```text
+chen-ming-address-proof.png
 ```
 
 如果现场不方便传图，可用文字备用：
@@ -156,18 +172,23 @@ chen-ming-kyc-demo.png
 
 预期 AI 行为：
 
-- 识别或接收证件字段。
-- 展示解析结果，让用户确认或纠错。
-- 如果证件图字段和文字字段都完整，复述完整开户申请摘要。
-- 展示 simulated KYC review preview：
-  - identity document capture。
-  - age eligibility。
-  - document validity。
-  - PEP declaration。
-  - source of funds。
-  - sanctions screening placeholder。
+- 识别护照字段：姓名、证件类型、证件号、出生日期、国籍、有效期。
+- 识别地址证明字段：材料类型、收件人、地址、日期。
+- 每次识别后展示已识别信息、需要确认/纠错的信息、仍需补充的信息。
+- 当护照、地址证明和业务字段完整后，要求再上传一张图片作为 KYC evidence。
+
+上传 KYC evidence：
+
+```text
+chen-ming-kyc-evidence.png
+```
+
+预期 AI 行为：
+
+- 标记 KYC evidence received，KYC review passed for intake。
+- 完整复述开户申请摘要。
 - 明确说明“确认后将提交开户申请，仍需后台批准后才会生成账户”。
-- 不声称真实 KYC、AML、制裁筛查或 PEP 筛查已经完成。
+- 不使用“演示、模拟、placeholder”等字眼，也不声称外部 KYC、AML、制裁筛查或 PEP 筛查已经完成。
 
 确认话术：
 
@@ -178,9 +199,9 @@ chen-ming-kyc-demo.png
 预期结果：
 
 - AI 调用 `create_onboarding_application`。
-- Telegram 返回申请编号、待审批状态和 standard/enhanced simulated review。
+- Telegram 返回申请编号、待审批状态和 standard/enhanced review。
 - 后台 Onboarding 页面出现 pending application。
-- 点击进入后台申请详情页，展示结构化证件字段、仿真 KYC checklist、submission metadata。
+- 点击进入后台申请详情页，展示结构化证件字段、地址证明字段、KYC checklist、submission metadata。
 - 在后台申请详情页批准该申请。
 - 系统生成客户、账户、首笔入金交易和审计记录。
 
@@ -253,7 +274,9 @@ Telegram 输入：
 预期行为：
 
 - AI 要求提供证件图片或手动证件字段。
-- AI 追问首笔入金、资金来源、地址、职业/职位、是否 PEP。
+- AI 要求提供地址证明材料。
+- AI 追问首笔入金、资金来源、职业/职位、是否 PEP。
+- AI 在护照、地址证明和业务字段完整后要求上传 KYC evidence。
 - AI 展示资料草稿状态，区分已取得资料和待补充资料。
 - 在资料完整并确认前，不调用开户工具。
 
@@ -334,7 +357,7 @@ pep-client-kyc-demo.png
 预期行为：
 
 - AI 解析证件并复述开户摘要。
-- simulated KYC review preview 标记为 enhanced review。
+- KYC review 标记为 enhanced review。
 - 允许提交开户申请，但后台详情页应显示 enhanced review、PEP review reason 和 checklist。
 
 ## 收尾讲解

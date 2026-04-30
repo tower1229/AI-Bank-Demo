@@ -31,13 +31,15 @@ const mcpContext: OperationContext = {
 const tools = [
   {
     name: "create_onboarding_application",
-    description: "Submit a confirmed private banking onboarding application with structured identity fields and simulated KYC review for later web-console approval.",
+    description: "Submit a confirmed private banking onboarding application with structured identity, address proof, and KYC evidence fields for later web-console approval.",
     inputSchema: {
       type: "object",
       required: [
         "confirmed",
         "customerName",
         "documentCaptureMethod",
+        "addressProofProvided",
+        "kycEvidenceProvided",
         "residentialAddress",
         "occupationTitle",
         "initialDepositCents",
@@ -55,6 +57,14 @@ const tools = [
         documentExpiryDate: { type: "string" },
         dateOfBirth: { type: "string" },
         nationality: { type: "string" },
+        addressProofProvided: { type: "boolean" },
+        addressProofCaptureMethod: { type: "string", enum: ["image_parsed", "manual_text", "manual_upload"] },
+        addressProofType: { type: "string" },
+        addressProofHolderName: { type: "string" },
+        addressProofAddress: { type: "string" },
+        addressProofIssueDate: { type: "string" },
+        kycEvidenceProvided: { type: "boolean" },
+        kycEvidenceCaptureMethod: { type: "string", enum: ["image_parsed", "manual_text", "manual_upload"] },
         residentialAddress: { type: "string" },
         occupationTitle: { type: "string" },
         initialDepositCents: { type: "integer" },

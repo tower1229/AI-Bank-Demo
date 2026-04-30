@@ -13,7 +13,7 @@ The repository has a working vertical demo slice: shared bank service layer, Clo
 Read these first:
 
 - `docs/requirements.md`: confirmed product and architecture contract.
-- `docs/openclaw-agent-instructions.md`: behavior contract for the `ai-bank` OpenClaw agent.
+- `docs/workspace/IDENTITY.md`, `docs/workspace/AGENTS.md`, and `docs/workspace/TOOLS.md`: behavior contract for the `ai-bank` OpenClaw agent.
 - `docs/demo-script.md`: target demo flow and failure cases.
 - `docs/deployment.md`: target Cloudflare and OpenClaw deployment shape.
 - `docs/setup-preparation.md`: Telegram, Cloudflare, and OpenClaw preparation checklist.

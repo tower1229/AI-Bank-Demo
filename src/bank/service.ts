@@ -33,6 +33,14 @@ export interface CreateOnboardingApplicationInput extends ConfirmedInput {
   documentExpiryDate?: string;
   dateOfBirth?: string;
   nationality?: string;
+  addressProofProvided?: boolean;
+  addressProofCaptureMethod?: DocumentCaptureMethod;
+  addressProofType?: string;
+  addressProofHolderName?: string;
+  addressProofAddress?: string;
+  addressProofIssueDate?: string;
+  kycEvidenceProvided?: boolean;
+  kycEvidenceCaptureMethod?: DocumentCaptureMethod;
   residentialAddress: string;
   occupationTitle: string;
   initialDepositCents: number;
@@ -78,6 +86,14 @@ export interface OnboardingApplication {
   documentExpiryDate: string | null;
   dateOfBirth: string | null;
   nationality: string | null;
+  addressProofProvided: number;
+  addressProofCaptureMethod: DocumentCaptureMethod | null;
+  addressProofType: string | null;
+  addressProofHolderName: string | null;
+  addressProofAddress: string | null;
+  addressProofIssueDate: string | null;
+  kycEvidenceProvided: number;
+  kycEvidenceCaptureMethod: DocumentCaptureMethod | null;
   residentialAddress: string | null;
   occupationTitle: string | null;
   initialDepositCents: number;
@@ -268,6 +284,14 @@ export async function createOnboardingApplication(
     throw new BankServiceError("DOCUMENT_NUMBER_TOO_SHORT", "Document number is too short for onboarding.");
   }
 
+  if (!input.addressProofProvided && !input.addressProofAddress) {
+    throw new BankServiceError("ADDRESS_PROOF_REQUIRED", "Address proof details are required for onboarding.");
+  }
+
+  if (!input.kycEvidenceProvided) {
+    throw new BankServiceError("KYC_EVIDENCE_REQUIRED", "KYC evidence image is required before submitting onboarding.");
+  }
+
   if (input.dateOfBirth && getAge(input.dateOfBirth) < 18) {
     throw new BankServiceError("CUSTOMER_UNDER_18", "The customer is under 18. This demo does not allow minor onboarding.");
   }
@@ -288,13 +312,16 @@ export async function createOnboardingApplication(
       `INSERT INTO onboarding_applications (
         id, status, customer_name, document_capture_method, document_provided,
         document_type, document_number, document_expiry_date, date_of_birth,
-        nationality, residential_address, occupation_title, initial_deposit_cents,
+        nationality, address_proof_provided, address_proof_capture_method,
+        address_proof_type, address_proof_holder_name, address_proof_address,
+        address_proof_issue_date, kyc_evidence_provided, kyc_evidence_capture_method,
+        residential_address, occupation_title, initial_deposit_cents,
         currency, source_of_funds, is_pep, initial_review, kyc_status,
         kyc_summary, kyc_checks_json, review_reasons_json, submitted_source,
         submitted_by, original_user_text, structured_params_json, confirmation_text,
         approved_by, approved_at, created_customer_id, created_account_id,
         created_at, updated_at
-      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
+      ) VALUES (?, 'pending_approval', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, ?)`
     )
     .bind(
       id,
@@ -306,6 +333,14 @@ export async function createOnboardingApplication(
       nullIfBlank(input.documentExpiryDate),
       nullIfBlank(input.dateOfBirth),
       nullIfBlank(input.nationality),
+      input.addressProofProvided ? 1 : 0,
+      nullIfBlank(input.addressProofCaptureMethod),
+      nullIfBlank(input.addressProofType),
+      nullIfBlank(input.addressProofHolderName),
+      nullIfBlank(input.addressProofAddress),
+      nullIfBlank(input.addressProofIssueDate),
+      input.kycEvidenceProvided ? 1 : 0,
+      nullIfBlank(input.kycEvidenceCaptureMethod),
       input.residentialAddress.trim(),
       input.occupationTitle.trim(),
       input.initialDepositCents,
@@ -849,6 +884,14 @@ function onboardingSelectColumns(): string {
     kyc_summary AS kycSummary,
     kyc_checks_json AS kycChecksJson,
     review_reasons_json AS reviewReasonsJson,
+    address_proof_provided AS addressProofProvided,
+    address_proof_capture_method AS addressProofCaptureMethod,
+    address_proof_type AS addressProofType,
+    address_proof_holder_name AS addressProofHolderName,
+    address_proof_address AS addressProofAddress,
+    address_proof_issue_date AS addressProofIssueDate,
+    kyc_evidence_provided AS kycEvidenceProvided,
+    kyc_evidence_capture_method AS kycEvidenceCaptureMethod,
     submitted_source AS submittedSource,
     submitted_by AS submittedBy,
     original_user_text AS originalUserText,
@@ -870,8 +913,17 @@ function createSimulatedKycReview(input: CreateOnboardingApplicationInput): Simu
     label: "Identity document capture",
     status: input.documentProvided || Boolean(input.documentNumber) ? "pass" : "fail",
     detail: input.documentCaptureMethod === "image_parsed"
-      ? "Structured identity fields were parsed from an uploaded demo document image."
+      ? "Structured identity fields were parsed from an uploaded document image."
       : "Structured identity fields were supplied manually for the demo record."
+  });
+
+  checks.push({
+    key: "address_proof",
+    label: "Address proof",
+    status: input.addressProofProvided || Boolean(input.addressProofAddress) ? "pass" : "fail",
+    detail: input.addressProofCaptureMethod === "image_parsed"
+      ? "Address proof fields were parsed from an uploaded document image."
+      : "Address proof details were supplied for the onboarding record."
   });
 
   if (input.dateOfBirth) {
@@ -914,7 +966,7 @@ function createSimulatedKycReview(input: CreateOnboardingApplicationInput): Simu
       key: "pep_declaration",
       label: "PEP declaration",
       status: "review",
-      detail: "PEP was declared; route to enhanced simulated review."
+      detail: "PEP was declared; route to enhanced review."
     });
   } else {
     checks.push({
@@ -943,16 +995,16 @@ function createSimulatedKycReview(input: CreateOnboardingApplicationInput): Simu
   }
 
   checks.push({
-    key: "sanctions_placeholder",
-    label: "Sanctions screening placeholder",
-    status: "pass",
-    detail: "No real sanctions screening is performed; this is a simulated demo placeholder only."
+    key: "kyc_evidence",
+    label: "KYC evidence",
+    status: input.kycEvidenceProvided ? "pass" : "fail",
+    detail: "KYC evidence image was received for the onboarding record."
   });
 
   const status: KycReviewStatus = checks.some((check) => check.status === "review") ? "enhanced_review" : "standard_review";
   const summary = status === "enhanced_review"
-    ? "Simulated KYC review requires enhanced bank-side review before approval."
-    : "Simulated KYC review is standard and ready for bank-side approval.";
+    ? "KYC review requires enhanced bank-side review before approval."
+    : "KYC review is standard and ready for bank-side approval.";
 
   return {
     status,

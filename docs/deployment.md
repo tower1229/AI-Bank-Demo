@@ -93,7 +93,7 @@ Example shape:
 }
 ```
 
-Copy or adapt `docs/openclaw-agent-instructions.md` into the `ai-bank` agent's system instructions or workspace guidance.
+Copy or adapt `docs/workspace/IDENTITY.md`, `docs/workspace/AGENTS.md`, and `docs/workspace/TOOLS.md` into the `ai-bank` agent's system instructions or workspace guidance.
 
 ## MCP Registration
 

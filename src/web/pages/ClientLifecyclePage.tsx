@@ -151,7 +151,7 @@ export function OnboardingApplicationDetailPage({
     <div className="space-y-5">
       <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <SectionHeader title={application.customerName} detail="Review applicant profile, simulated KYC checks, and source metadata before approval." />
+          <SectionHeader title={application.customerName} detail="Review applicant profile, KYC checks, and source metadata before approval." />
           {application.status === "pending_approval" ? (
             <button
               className="inline-flex min-h-10 items-center justify-center rounded-md bg-violet-600 px-4 text-sm font-semibold text-white hover:bg-violet-700"
@@ -164,7 +164,7 @@ export function OnboardingApplicationDetailPage({
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <SummaryTile label="Lifecycle status" value={<StatusBadge value={application.status} />} />
-          <SummaryTile label="Simulated KYC" value={<StatusBadge value={application.kycStatus} />} />
+          <SummaryTile label="KYC review" value={<StatusBadge value={application.kycStatus} />} />
           <SummaryTile label="Initial funding" value={formatUsd(application.initialDepositCents)} />
         </div>
       </article>
@@ -180,6 +180,12 @@ export function OnboardingApplicationDetailPage({
               ["Date of birth", application.dateOfBirth ?? "Not supplied"],
               ["Document expiry", application.documentExpiryDate ?? "Not supplied"],
               ["Nationality", application.nationality ?? "Not supplied"],
+              ["Address proof", application.addressProofProvided ? "Received" : "Not supplied"],
+              ["Address proof type", application.addressProofType ?? "Not supplied"],
+              ["Address proof holder", application.addressProofHolderName ?? "Not supplied"],
+              ["Address proof address", application.addressProofAddress ?? "Not supplied"],
+              ["Address proof date", application.addressProofIssueDate ?? "Not supplied"],
+              ["KYC evidence", application.kycEvidenceProvided ? "Received" : "Not supplied"],
               ["Residential address", application.residentialAddress ?? "Not supplied"],
               ["Occupation/title", application.occupationTitle ?? "Not supplied"],
               ["Source of funds", application.sourceOfFunds],
@@ -189,7 +195,7 @@ export function OnboardingApplicationDetailPage({
         </article>
 
         <article className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <SectionHeader title="Simulated KYC Review" detail={application.kycSummary ?? "Simulated review details for demo approval."} />
+          <SectionHeader title="KYC Review" detail={application.kycSummary ?? "KYC review details for approval."} />
           <div className="mt-5 space-y-3">
             {application.kycChecks.map((check) => (
               <div className="flex gap-3 border-b border-gray-100 py-3 last:border-0" key={check.key}>
@@ -263,6 +269,14 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
         dateOfBirth: form.dateOfBirth,
         documentExpiryDate: form.documentExpiryDate,
         nationality: form.nationality,
+        addressProofProvided: true,
+        addressProofCaptureMethod: "manual_text",
+        addressProofType: form.addressProofType,
+        addressProofHolderName: form.customerName,
+        addressProofAddress: form.residentialAddress,
+        addressProofIssueDate: form.addressProofIssueDate,
+        kycEvidenceProvided: true,
+        kycEvidenceCaptureMethod: "manual_upload",
         residentialAddress: form.residentialAddress,
         occupationTitle: form.occupationTitle,
         initialDepositCents: amount,
@@ -293,6 +307,10 @@ export function NewClientApplicationPage({ runAction }: { runAction: RunAction }
           <TextInput label="Document expiry" value={form.documentExpiryDate} onChange={(documentExpiryDate) => setForm({ ...form, documentExpiryDate })} />
         </div>
         <TextInput label="Nationality" value={form.nationality} onChange={(nationality) => setForm({ ...form, nationality })} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextInput label="Address proof type" value={form.addressProofType} onChange={(addressProofType) => setForm({ ...form, addressProofType })} />
+          <TextInput label="Address proof date" value={form.addressProofIssueDate} onChange={(addressProofIssueDate) => setForm({ ...form, addressProofIssueDate })} />
+        </div>
         <TextInput label="Residential address" value={form.residentialAddress} onChange={(residentialAddress) => setForm({ ...form, residentialAddress })} />
         <TextInput label="Occupation/title" value={form.occupationTitle} onChange={(occupationTitle) => setForm({ ...form, occupationTitle })} />
         <TextInput label="Initial deposit USD" value={form.initialDepositUsd} onChange={(initialDepositUsd) => setForm({ ...form, initialDepositUsd })} />
@@ -400,6 +418,8 @@ function generateDemoApplicationProfile() {
     dateOfBirth: formatDate(birthYear, birthMonth, birthDay),
     documentExpiryDate: formatDate(expiryYear, expiryMonth, expiryDay),
     nationality: pick(nationalities),
+    addressProofType: "utility bill",
+    addressProofIssueDate: formatDate(2026, randomInt(1, 4), randomInt(1, 28)),
     residentialAddress: pick(addresses),
     occupationTitle: pick(occupations),
     initialDepositUsd: pick(initialDeposits),
